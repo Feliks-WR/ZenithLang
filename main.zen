@@ -1,0 +1,7 @@
+x = 5
+y = [10, 6, 2]
+s = "Hello, World!"
+
+print x
+print y
+print s

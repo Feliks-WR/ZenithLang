@@ -1,0 +1,6 @@
+x = 5
+y = [2, 4, 6]
+s = "Hello, Zenith!"
+print x
+print y
+print s
