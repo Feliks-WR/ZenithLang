@@ -8,15 +8,15 @@ void zenith_write_char(const char value) {
     putchar(value);
 }
 
-void zenith_write_str(const char* value) {
-    printf("%s", value);
+void zenith_print_str(const char* value) {
+    printf("%s\n", value);
 }
 
-void zenith_write_i64(const int64_t value) {
-    printf("%ld", value);
+void zenith_print_i64(const int64_t value) {
+    printf("%ld\n", value);
 }
 
-void zenith_write_array(const int64_t* data, const size_t size) {
+void zenith_print_array(const int64_t* data, const size_t size) {
     printf("[");
     for (size_t i = 0; i < size; ++i) {
         printf("%ld", data[i]);
@@ -24,7 +24,7 @@ void zenith_write_array(const int64_t* data, const size_t size) {
             printf(", ");
         }
     }
-    printf("]");
+    printf("]\n");
 }
 
 } // extern "C"

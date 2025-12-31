@@ -1,0 +1,38 @@
+lexer grammar ZenithLexer;
+
+UNSAFE: 'unsafe';
+PROC: 'proc';
+SUBROUTINE: 'subroutine';
+CALL: 'call';
+MATH: 'math';
+PURE: 'pure';
+FUNC: 'func';
+TYPE_KW: 'type';
+INT_KW: 'int';
+STR_KW: 'str';
+FLOAT_KW: 'float';
+BOOL_KW: 'bool';
+
+LBRACK: '[';
+RBRACK: ']';
+LPAREN: '(';
+RPAREN: ')';
+LBRACE: '{';
+RBRACE: '}';
+COLON: ':';
+SEMI: ';';
+COMMA: ',';
+PIPE: '|';
+RANGE: '..';
+ARROW: '->';
+ASSIGN: '=';
+
+ID: [a-zA-Z_][a-zA-Z0-9_]*;
+INT: [0-9]+;
+FLOAT: [0-9]+ '.' [0-9]+;
+BOOL: 'true' | 'false';
+STRING: '"' (~["\r\n])* '"';
+NEWLINE: '\r'? '\n';
+WS: [ \t]+ -> skip;
+MULTILINE_COMMENT: '/*' .*? '*/' -> skip;
+COMMENT: '//' ~[\r\n]* -> skip;

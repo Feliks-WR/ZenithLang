@@ -23,11 +23,10 @@
 #include "mlir/Target/LLVMIR/Export.h"
 #include "llvm/Support/TargetSelect.h"
 #include <iostream>
+#include <unordered_map>
 
 using namespace mlir;
 using namespace mlir::zenith;
-
-extern "C" {
 
 struct ZenithModule {
     MLIRContext context;
@@ -136,7 +135,7 @@ void zenith_finalize(void* mod) {
 
 void zenith_dump(void* mod) {
     auto* m = static_cast<ZenithModule*>(mod);
-    m->module->dump();
+    // m->module->dump();
 }
 
 int zenith_execute(void* mod) {
@@ -149,8 +148,8 @@ int zenith_execute(void* mod) {
     // Create a pass manager
     PassManager pm(m->module->getContext());
 
-    std::cout << "\n--- MLIR Before Lowering ---\n";
-    m->module->dump();
+    // std::cout << "\n--- MLIR Before Lowering ---\n";
+    // m->module->dump();
 
     // Lower Zenith dialect to standard dialects
     pm.addPass(createZenithToStandardPass());
@@ -208,11 +207,9 @@ int zenith_execute(void* mod) {
 
     auto *main_func = reinterpret_cast<void (*)()>(*expected_f_ptr);
 
-    std::cout << "\n--- Executing ---\n";
+    // std::cout << "\n--- Executing ---\n";
     main_func();
-    std::cout << "\n✓ Execution completed successfully\n";
+    // std::cout << "\n✓ Execution completed successfully\n";
 
     return 0;
 }
-
-} // extern "C"
