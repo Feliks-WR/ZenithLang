@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 4.1.2)
-project(Zenith LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.20)
+project(Zenith LANGUAGES CXX C)
 
 # Enable compile_commands.json for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -43,11 +43,11 @@ message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 include_directories(
-        # ANTLR4 runtime headers
-        /antlr4-runtime
-        /usr/local/include
-        /usr/local/include/antlr4-runtime
+        # ANTLR4 runtime headers (local third_party first, then system)
+        ${PROJECT_SOURCE_DIR}/third_party/antlr4/runtime/Cpp/runtime/src
         /usr/include/antlr4-runtime
+        /usr/local/include/antlr4-runtime
+        /usr/local/include
         ${ANTLR_INCLUDE_DIR}
 
         # LLVM/MLIR headers
@@ -114,13 +114,18 @@ add_public_tablegen_target(ZenithOpsIncGen)
 # )
 # Refactored C++ Driver with modular architecture
 add_executable(zenith-cli
-    tools/main.cpp
     ${ANTLR_Zenith_CXX_OUTPUTS}
+    tools/zenith-cli.cpp
+    lib/zenith/ir/hir.cpp
+    lib/zenith/frontend/parser.cpp
+    lib/zenith/backend/mlir_pass.cpp
+    lib/zenith/backend/execution_pass.cpp
 )
 
 # Include directories for zenith-cli (comprehensive)
 target_include_directories(zenith-cli PRIVATE
-    # ANTLR4 includes
+    # ANTLR4 includes (local third_party first for 4.13.2 compatibility)
+    ${PROJECT_SOURCE_DIR}/third_party/antlr4/runtime/Cpp/runtime/src
     /usr/local/include/antlr4-runtime
     /usr/local/include
     /usr/include/antlr4-runtime
@@ -155,4 +160,17 @@ target_link_libraries(zenith-cli
     MLIR
     MLIRArithDialect
     MLIRFuncDialect
+    MLIRMemRefDialect
+    MLIRExecutionEngine
+    MLIRArithToLLVM
+    MLIRFuncToLLVM
+    MLIRMemRefToLLVM
+    MLIRReconcileUnrealizedCasts
+    MLIRTargetLLVMIRExport
+    MLIRLLVMDialect
+    MLIRLLVMToLLVMIRTranslation
+    MLIRBuiltinToLLVMIRTranslation
+    LLVMSupport
+    LLVMCore
 )
+

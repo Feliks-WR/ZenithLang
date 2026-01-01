@@ -3,11 +3,12 @@
 #include <functional>
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "llvm/Support/raw_ostream.h"
-#include <iostream>
 
 
 namespace zenith::ir
@@ -22,12 +23,17 @@ void MLIRPass::run(const ir::HirModule& hir) {
 
     // Create MLIR context and load dialects
     MLIRContext ctx;
-    ctx.loadDialect<mlir::func::FuncDialect>();
-    ctx.loadDialect<mlir::arith::ArithDialect>();
+    ctx.loadDialect<func::FuncDialect>();
+    ctx.loadDialect<arith::ArithDialect>();
+    ctx.loadDialect<memref::MemRefDialect>();
 
     OpBuilder builder(&ctx);
     auto mlirModule = ModuleOp::create(builder.getUnknownLoc());
     builder.setInsertionPointToEnd(mlirModule.getBody());
+
+    // String counter for unique global string names
+    int stringCounter = 0;
+
 
     // Lambda: lower expression to MLIR value
     std::function<Value(const ir::HirExpr&, OpBuilder&, mlir::Block*)> lowerExpr;
@@ -46,12 +52,91 @@ void MLIRPass::run(const ir::HirModule& hir) {
             }
             case ir::HirExpr::Kind::BoolLit: {
                 auto ty = b.getI1Type();
-                return b.create<mlir::arith::ConstantOp>(
+                return b.create<arith::ConstantOp>(
                     b.getUnknownLoc(), ty, b.getBoolAttr(e.boolVal));
             }
-            case ir::HirExpr::Kind::StringLit:
+            case ir::HirExpr::Kind::StringLit: {
+                // Create an immutable global string (Rust-style: length + UTF-8 bytes, no \0)
+                // String layout in memory: struct { length: i64, data: [i8 x N] }
+
+                std::string globalName = "zenith_str_" + std::to_string(stringCounter++);
+                const size_t strLen = e.strVal.length();
+
+                // Create the byte array for string content
+                SmallVector<int8_t> strBytes;
+                for (const char c : e.strVal) {
+                    strBytes.push_back(static_cast<int8_t>(c));
+                }
+
+                // Save current insertion point
+                OpBuilder::InsertionGuard guard(b);
+                b.setInsertionPointToStart(mlirModule.getBody());
+
+                // Create memref type for string data: memref<Nxi8>
+                const auto i8Type = b.getI8Type();
+                const auto memrefType = MemRefType::get({static_cast<int64_t>(strLen)}, i8Type);
+
+                // Create dense elements attribute for initial value
+                auto tensorType = RankedTensorType::get({static_cast<int64_t>(strLen)}, i8Type);
+                auto initialValue = DenseElementsAttr::get(tensorType, llvm::ArrayRef(strBytes));
+
+                // Create memref.global with a constant attribute
+                auto globalOp = b.create<memref::GlobalOp>(
+                    b.getUnknownLoc(),
+                    globalName,
+                    b.getStringAttr("private"),
+                    memrefType,
+                    initialValue,
+                    /*constant=*/true,
+                    /*alignment=*/nullptr
+                );
+
+                // Add length metadata as an attribute (for Rust-style string descriptor)
+                globalOp->setAttr("zenith.string.length", b.getI64IntegerAttr(strLen));
+                globalOp->setAttr("zenith.string.encoding", b.getStringAttr("utf8"));
+
+                // Return nullptr for now (in real usage, would return memref reference)
+                return nullptr;
+            }
+            case ir::HirExpr::Kind::Array: {
+                // Lower array elements to constants
+                SmallVector<Value> elemVals;
+                Type elemType = nullptr;
+
+                for (const auto& elem : e.elements) {
+                    if (const auto val = lowerExpr(elem, b, blk)) {
+                        elemVals.push_back(val);
+                        if (!elemType) elemType = val.getType();
+                    }
+                }
+
+                if (elemVals.empty()) return nullptr;
+
+                // Create a memref to hold the array: memref<Nxtype>
+                auto arraySize = static_cast<int64_t>(elemVals.size());
+                auto memrefType = MemRefType::get({arraySize}, elemType);
+
+                // Allocate stack space for the array
+                auto allocaOp = b.create<memref::AllocaOp>(
+                    b.getUnknownLoc(),
+                    memrefType
+                );
+
+                // Store each element into the memref
+                for (size_t i = 0; i < elemVals.size(); ++i) {
+                    auto indexVal = b.create<arith::ConstantIndexOp>(b.getUnknownLoc(), i);
+                    b.create<memref::StoreOp>(
+                        b.getUnknownLoc(),
+                        elemVals[i],
+                        allocaOp,
+                        ValueRange{indexVal}
+                    );
+                }
+
+                // Return the memref (represents the array)
+                return allocaOp.getResult();
+            }
             case ir::HirExpr::Kind::Id:
-            case ir::HirExpr::Kind::Array:
             case ir::HirExpr::Kind::Call:
                 return nullptr;
             case ir::HirExpr::Kind::Group:
@@ -63,23 +148,58 @@ void MLIRPass::run(const ir::HirModule& hir) {
     };
 
     // Lambda: lower statement
-    std::function<void(const ir::HirStmt&, OpBuilder&, mlir::Block*)> lowerStmt;
-    lowerStmt = [&](const ir::HirStmt& stmt, OpBuilder& b, mlir::Block* blk) {
+    const std::function lowerStmt = [&](const ir::HirStmt& stmt, OpBuilder& b, mlir::Block* blk){
         b.setInsertionPointToEnd(blk);
-        switch (stmt.kind) {
-            case ir::HirStmt::Kind::Assign: {
+
+        // Debug output to stderr (only if a debug_ flag is set)
+        if (debug_) {
+            llvm::errs() << "Lowering assignment: " << stmt.name << " = ";
+        }
+
+        switch (stmt.kind)
+        {
+        case ir::HirStmt::Kind::Assign:
+            {
+                // Show what type of value is being assigned (only in debug mode)
+                if (debug_) {
+                    switch (stmt.expr.kind) {
+                        case ir::HirExpr::Kind::IntLit:
+                            llvm::errs() << stmt.expr.intVal << " (int)\n";
+                            break;
+                        case ir::HirExpr::Kind::StringLit:
+                            llvm::errs() << "\"" << stmt.expr.strVal << "\" (string - UTF-8 immutable)\n";
+                            break;
+                        case ir::HirExpr::Kind::Array:
+                            llvm::errs() << "[array with " << stmt.expr.elements.size() << " elements]\n";
+                            break;
+                        default:
+                            llvm::errs() << "(other type)\n";
+                    }
+                }
+
                 auto rhsVal = lowerExpr(stmt.expr, b, blk);
                 break;
             }
-            case ir::HirStmt::Kind::Call: {
+        case ir::HirStmt::Kind::Call:
+            {
+                if (debug_) {
+                    llvm::errs() << "call: " << stmt.name << "()\n";
+                }
                 break;
             }
         }
     };
 
     // Lower top-level statements
+    if (debug_) {
+        llvm::errs() << "=== Processing Zenith File ===\n";
+    }
     for (const auto& stmt : hir.topLevel) {
         lowerStmt(stmt, builder, mlirModule.getBody());
+    }
+    if (debug_) {
+        llvm::errs() << "=== MLIR Output ===\n";
+        llvm::errs().flush();
     }
 
     // Lower function declarations
@@ -110,8 +230,9 @@ void MLIRPass::run(const ir::HirModule& hir) {
         }
     }
 
-    // Print MLIR module to stdout
-    llvm::outs() << mlirModule;
+    // Print MLIR module to stdout with pretty formatting
+    mlirModule.print(llvm::outs());
+    llvm::outs() << "\n";
 }
 
 }  // namespace zenith::backend

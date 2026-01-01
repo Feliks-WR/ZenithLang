@@ -8,6 +8,7 @@ endif()
 find_path(ANTLR_INCLUDE_DIR NAMES antlr4-runtime.h
     PATH_SUFFIXES antlr4-runtime
     HINTS
+        ${CMAKE_SOURCE_DIR}/third_party/antlr4/runtime/Cpp/runtime/src
         /usr/local/include
         /usr/include
     NO_DEFAULT_PATH
@@ -18,6 +19,7 @@ endif()
 
 find_library(ANTLR_LIBRARY NAMES antlr4-runtime antlr4_runtime
     HINTS
+        ${CMAKE_SOURCE_DIR}/third_party/antlr4/runtime/Cpp/dist
         /usr/local/lib
         /usr/lib/x86_64-linux-gnu
         /usr/lib

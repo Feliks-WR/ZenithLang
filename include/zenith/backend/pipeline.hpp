@@ -1,7 +1,7 @@
 #ifndef ZENITH_BACKEND_PIPELINE_HPP
 #define ZENITH_BACKEND_PIPELINE_HPP
 
-#include "zenith/backend/pass.hpp"
+#include "pass.hpp"
 #include "zenith/ir/hir.hpp"
 #include <memory>
 #include <vector>
@@ -9,7 +9,7 @@
 namespace zenith::backend {
 
 /// \brief Compiler pass pipeline (Builder pattern + Chain of Responsibility).
-class Pipeline {
+class Pipeline final {
 public:
     Pipeline() = default;
 
@@ -23,7 +23,8 @@ public:
         return *this;
     }
 
-    void run(const ir::HirModule& hir) {
+    void run(const ir::HirModule& hir) const
+    {
         for (auto& pass : passes_) {
             if (pass) {
                 pass->run(hir);
