@@ -77,7 +77,7 @@ void MLIRPass::run(const ir::HirModule& hir) {
                 const auto memrefType = MemRefType::get({static_cast<int64_t>(strLen)}, i8Type);
 
                 // Create dense elements attribute for initial value
-                auto tensorType = RankedTensorType::get({static_cast<int64_t>(strLen)}, i8Type);
+                const auto tensorType = RankedTensorType::get({static_cast<int64_t>(strLen)}, i8Type);
                 auto initialValue = DenseElementsAttr::get(tensorType, llvm::ArrayRef(strBytes));
 
                 // Create memref.global with a constant attribute
@@ -143,6 +143,50 @@ void MLIRPass::run(const ir::HirModule& hir) {
             case ir::HirExpr::Kind::Unsafe:
                 if (!e.elements.empty()) return lowerExpr(e.elements[0], b, blk);
                 return nullptr;
+            case ir::HirExpr::Kind::BinOp: {
+                if (!e.lhs || !e.rhs) return nullptr;
+
+                Value lhsVal = lowerExpr(*e.lhs, b, blk);
+                Value rhsVal = lowerExpr(*e.rhs, b, blk);
+
+                if (!lhsVal || !rhsVal) return nullptr;
+
+                switch (e.binOpKind) {
+                    case ir::HirExpr::BinOpKind::Add: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::AddIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        } else {
+                            return b.create<arith::AddFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                    }
+                    case ir::HirExpr::BinOpKind::Sub: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::SubIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        } else {
+                            return b.create<arith::SubFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                    }
+                    case ir::HirExpr::BinOpKind::Mul: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::MulIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        } else {
+                            return b.create<arith::MulFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                    }
+                    case ir::HirExpr::BinOpKind::Div: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::DivSIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        } else {
+                            return b.create<arith::DivFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                    }
+                    case ir::HirExpr::BinOpKind::Concat: {
+                        // String/array concatenation would require additional implementation
+                        return nullptr;
+                    }
+                }
+                return nullptr;
+            }
         }
         return nullptr;
     };

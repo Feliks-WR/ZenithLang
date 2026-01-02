@@ -1,0 +1,14 @@
+// Zenith Standard Library - Core module
+// Contains fundamental I/O operations and utility functions
+
+// Print operations for various types
+proc print(x: int)
+proc print(x: float)
+proc print(x: bool)
+proc print(x: str)
+proc print(x: [int])
+proc print(x: [float])
+proc print(x: [str])
+
+// TODO: Add more core functions
+

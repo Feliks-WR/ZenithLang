@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <option name="projectDefaultTargetUuid" value="919cb335-a824-4e70-9b92-3c026360e4f7" />
+    <targets>
+      <target name="sha256:9f5b2cbe92ff" type="docker" uuid="919cb335-a824-4e70-9b92-3c026360e4f7">
+        <config>
+          <option name="targetPlatform">
+            <TargetPlatform />
+          </option>
+          <option name="buildImageConfig">
+            <BuildImageConfig>
+              <option name="builtImageTag" value="sha256:9f5b2cbe92ff0f7c907eeef70262cca1a20abcefe68859c74ce267d70aeeee34" />
+              <option name="dockerFile" value="tools/rust_parser/Dockerfile" />
+            </BuildImageConfig>
+          </option>
+        </config>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config>
+            <option name="cargoPath" value="/usr/local/cargo/bin/cargo" />
+            <option name="cargoVersion" value="1.89.0 (c24e10642 2025-06-23)" />
+            <option name="rustcPath" value="/usr/local/cargo/bin/rustc" />
+            <option name="rustcVersion" value="1.89.0 (29483883e 2025-08-04)" />
+          </config>
+        </ContributedStateBase>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config />
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>

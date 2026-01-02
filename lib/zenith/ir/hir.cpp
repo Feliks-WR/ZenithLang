@@ -9,6 +9,24 @@ struct HirExpr;
 
 namespace zenith::ir {
 
+// HirRangeExpr implementations
+HirRangeExpr HirRangeExpr::lit(int64_t v) {
+    HirRangeExpr e; e.kind = OpKind::Lit; e.value = v; return e;
+}
+
+HirRangeExpr HirRangeExpr::id(std::string name) {
+    HirRangeExpr e; e.kind = OpKind::Id; e.varName = std::move(name); return e;
+}
+
+HirRangeExpr HirRangeExpr::binOp(OpKind op, HirRangeExpr lhs, HirRangeExpr rhs) {
+    HirRangeExpr e;
+    e.kind = op;
+    e.left = std::make_shared<HirRangeExpr>(std::move(lhs));
+    e.right = std::make_shared<HirRangeExpr>(std::move(rhs));
+    return e;
+}
+
+// HirExpr implementations
 HirExpr HirExpr::intLit(std::int64_t v) {
     HirExpr e; e.kind = Kind::IntLit; e.intVal = v; return e;
 }
@@ -43,6 +61,15 @@ HirExpr HirExpr::group(HirExpr inner) {
 
 HirExpr HirExpr::unsafeBlock(HirExpr inner) {
     HirExpr e; e.kind = Kind::Unsafe; e.elements.push_back(std::move(inner)); return e;
+}
+
+HirExpr HirExpr::binOp(BinOpKind op, HirExpr lhs, HirExpr rhs) {
+    HirExpr e;
+    e.kind = HirExpr::Kind::BinOp;
+    e.binOpKind = op;
+    e.lhs = std::make_shared<HirExpr>(std::move(lhs));
+    e.rhs = std::make_shared<HirExpr>(std::move(rhs));
+    return e;
 }
 
 HirStmt HirStmt::assign(std::string lhs, std::optional<HirType> t, HirExpr rhs) {

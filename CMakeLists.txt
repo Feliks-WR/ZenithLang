@@ -117,9 +117,12 @@ add_executable(zenith-cli
     ${ANTLR_Zenith_CXX_OUTPUTS}
     tools/zenith-cli.cpp
     lib/zenith/ir/hir.cpp
+    lib/zenith/ir/constraint_validator.cpp
+    lib/zenith/ir/immutability_checker.cpp
     lib/zenith/frontend/parser.cpp
     lib/zenith/backend/mlir_pass.cpp
     lib/zenith/backend/execution_pass.cpp
+    lib/zenith/stdlib_registry.cpp
 )
 
 # Include directories for zenith-cli (comprehensive)

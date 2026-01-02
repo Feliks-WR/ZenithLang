@@ -1,0 +1,32 @@
+// Zenith Standard Library - Array operations
+// Safe array manipulation functions with dependent types
+
+// Array length - always returns non-negative integer
+pure len(arr: [int]) -> int @ positive
+pure len(arr: [float]) -> int @ positive
+pure len(arr: [str]) -> int @ positive
+pure len(arr: [bool]) -> int @ positive
+
+// Array indexing with bounds checking
+// Index must be in range [0..len(arr)-1]
+pure index(arr: [int], idx: int) -> int
+pure index(arr: [float], idx: int) -> float
+pure index(arr: [str], idx: int) -> str
+
+// Array slicing
+// start and end must be in valid range
+pure slice(arr: [int], start: int, end: int) -> [int]
+pure slice(arr: [float], start: int, end: int) -> [float]
+
+// Check if array is sorted
+pure is_sorted(arr: [int]) -> bool
+pure is_sorted(arr: [float]) -> bool
+
+// Sort array (returns new sorted array)
+pure sort(arr: [int]) -> [int] @ sorted
+pure sort(arr: [float]) -> [float] @ sorted
+
+// Reverse array
+pure reverse(arr: [int]) -> [int] @ reversed
+pure reverse(arr: [float]) -> [float] @ reversed
+

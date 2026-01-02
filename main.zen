@@ -1,7 +1,20 @@
-x = 5
-y = [10, 6, 2]
-s = "Hello, World!"
+// Zenith Example: Dependent Types and Immutable Functions
 
+// Basic variables with dependent types - range constraints
+x: int[0..100] = 50
+
+// Named constraints from stdlib
+y: int @ positive = 42
+
+// Dependent type with explicit variable
+z: int{n : 1..10} = 5
+
+// Simple array
+arr = [1, 2, 3]
+
+// Print operations
 print x
 print y
-print s
+print z
+print arr
+

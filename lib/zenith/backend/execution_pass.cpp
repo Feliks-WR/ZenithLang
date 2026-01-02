@@ -14,13 +14,16 @@
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/All.h"
 #include "mlir/Target/LLVMIR/Export.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/Passes.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/InitAllPasses.h"
 
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
@@ -131,6 +134,48 @@ void ExecutionPass::run(const ir::HirModule& hir) {
             case ir::HirExpr::Kind::Unsafe:
                 if (!e.elements.empty()) return lowerExpr(e.elements[0], b, blk);
                 return nullptr;
+            case ir::HirExpr::Kind::BinOp: {
+                if (!e.lhs || !e.rhs) return nullptr;
+
+                Value lhsVal = lowerExpr(*e.lhs, b, blk);
+                Value rhsVal = lowerExpr(*e.rhs, b, blk);
+
+                if (!lhsVal || !rhsVal) return nullptr;
+
+                switch (e.binOpKind) {
+                    case ir::HirExpr::BinOpKind::Add: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::AddIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        } else {
+                            return b.create<arith::AddFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                    }
+                    case ir::HirExpr::BinOpKind::Sub: {
+                        if (lhsVal.getType().isInteger(64))
+                            return b.create<arith::SubIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        return b.create<arith::SubFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                    }
+                    case ir::HirExpr::BinOpKind::Mul: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::MulIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                        return b.create<arith::MulFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                    }
+                    case ir::HirExpr::BinOpKind::Div: {
+                        if (lhsVal.getType().isInteger(64)) {
+                            return b.create<arith::DivSIOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        } else {
+                            return b.create<arith::DivFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
+                        }
+                    }
+                    case ir::HirExpr::BinOpKind::Concat: {
+                        // String/array concatenation would require additional implementation
+                        // For now, return nullptr as it requires string manipulation ops
+                        return nullptr;
+                    }
+                }
+                return nullptr;
+            }
         }
         return nullptr;
     };
@@ -172,13 +217,17 @@ void ExecutionPass::run(const ir::HirModule& hir) {
         llvm::errs() << "\n";
     }
 
+    // Register all passes before using PassManager
+    mlir::registerAllPasses();
+
     // Lower MLIR to LLVM dialect
     PassManager pm(&ctx);
-    // First, convert Arith, Func, and MemRef to LLVM
-    pm.addPass(mlir::createConvertArithToLLVMPass());
+    // First, convert Arith operations to LLVM
+    pm.addPass(mlir::createArithToLLVMConversionPass());
+    // Then, convert Func and MemRef to LLVM
     pm.addPass(mlir::createConvertFuncToLLVMPass());
     pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
-    // Then reconcile any remaining casts
+    // Finally, reconcile any remaining casts
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
 
     if (failed(pm.run(mlirModule))) {
@@ -192,9 +241,10 @@ void ExecutionPass::run(const ir::HirModule& hir) {
         llvm::errs() << "\n";
     }
 
-    // Register LLVM dialect translation
-    registerBuiltinDialectTranslation(ctx);
-    registerLLVMDialectTranslation(ctx);
+    // Register LLVM dialect translations for execution engine
+    mlir::DialectRegistry registry;
+    mlir::registerAllToLLVMIRTranslations(registry);
+    ctx.appendDialectRegistry(registry);
 
     // Create a JIT execution engine
     auto maybeEngine = ExecutionEngine::create(mlirModule);

@@ -1,0 +1,31 @@
+// Zenith Standard Library - Constraint definitions
+// Defines constraint predicates for dependent types
+
+// Array constraints
+constraint sorted(arr: [int]) -> bool
+constraint sorted(arr: [float]) -> bool
+constraint reversed(arr: [int]) -> bool
+constraint reversed(arr: [float]) -> bool
+
+// Numeric constraints
+constraint even(n: int) -> bool
+constraint odd(n: int) -> bool
+constraint positive(n: int) -> bool
+constraint negative(n: int) -> bool
+constraint non_negative(n: int) -> bool
+constraint non_positive(n: int) -> bool
+
+// Float constraints
+constraint not_nan(f: float) -> bool
+constraint not_inf(f: float) -> bool
+constraint finite(f: float) -> bool
+
+// String constraints
+constraint non_empty(s: str) -> bool
+constraint ascii(s: str) -> bool
+
+// Usage examples:
+// arr: [int] @ sorted
+// x: int @ positive @ even
+// f: float @ not_nan @ finite
+
