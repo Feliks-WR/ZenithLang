@@ -2,7 +2,7 @@
 #define ZENITH_BACKEND_PIPELINE_HPP
 
 #include "pass.hpp"
-#include "zenith/ir/hir.hpp"
+#include "ir/hir.hpp"
 #include <memory>
 #include <vector>
 

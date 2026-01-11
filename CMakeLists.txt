@@ -79,13 +79,19 @@ add_definitions(${LLVM_DEFINITIONS})
 # Generate Lexer/Parser from split .g4 files EARLY so headers are available
 antlr_target(Zenith grammar/ZenithParser.g4 grammar/ZenithLexer.g4)
 
+# --- Helper target for new dialect TableGen templates ---
+add_custom_target(ZenithNewDialectTemplates ALL
+    DEPENDS ${PROJECT_SOURCE_DIR}/include/zenith/td/ExampleDialect.td
+)
+
 # --- TableGen for Zenith Dialect ---
-set(LLVM_TARGET_DEFINITIONS include/zenith/ZenithOps.td)
+set(LLVM_TARGET_DEFINITIONS include/zenith/td/ZenithOps.td)
 mlir_tablegen(include/Zenith/ZenithOpsDialect.h.inc -gen-dialect-decls -dialect=zenith)
 mlir_tablegen(include/Zenith/ZenithOpsDialect.cpp.inc -gen-dialect-defs -dialect=zenith)
 mlir_tablegen(include/Zenith/ZenithOps.h.inc -gen-op-decls)
 mlir_tablegen(include/Zenith/ZenithOps.cpp.inc -gen-op-defs)
 add_public_tablegen_target(ZenithOpsIncGen)
+add_dependencies(ZenithOpsIncGen ZenithNewDialectTemplates)
 
 # --- Zenith Dialect Library (disabled temporarily - has header issues)
 # add_library(ZenithDialect SHARED
@@ -176,4 +182,3 @@ target_link_libraries(zenith-cli
     LLVMSupport
     LLVMCore
 )
-

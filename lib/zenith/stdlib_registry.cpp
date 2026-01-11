@@ -2,9 +2,10 @@
 #include <map>
 
 namespace zenith::stdlib {
+    class StdlibRegistry;
 
-// Embedded stdlib source code
-const char* StdlibRegistry::CORE_MODULE = R"(
+    // Embedded stdlib source code
+    auto StdlibRegistry::CORE_MODULE = R"(
 proc print(x: int)
 proc print(x: float)
 proc print(x: bool)
@@ -14,7 +15,7 @@ proc print(x: [float])
 proc print(x: [str])
 )";
 
-const char* StdlibRegistry::CONSTRAINTS_MODULE = R"(
+    auto StdlibRegistry::CONSTRAINTS_MODULE = R"(
 // Constraint definitions for dependent types
 // These are markers for the type system to validate constraints
 
@@ -33,7 +34,7 @@ constraint non_empty
 constraint ascii
 )";
 
-const char* StdlibRegistry::ARRAY_MODULE = R"(
+auto StdlibRegistry::ARRAY_MODULE = R"(
 pure len(arr: [int]) -> int
 pure len(arr: [float]) -> int
 pure len(arr: [str]) -> int
