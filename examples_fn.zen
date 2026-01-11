@@ -1,0 +1,42 @@
+// Zenith Examples: fn keyword and effect system
+
+// Traditional fn syntax with body
+fn square(x: int) -> int {
+    x * x
+}
+
+// Lambda-style fn with expression
+fn cube(x: int) = x ** 3
+
+// Type signature only (for later implementation)
+fn identity : int -> int
+
+// fn with effects/monads
+fn readFile : str -> str | IO
+
+// fn with multiple effects
+fn processData : int -> int | IO, Exception
+
+// Procedure with side effects (uses proc keyword)
+proc writesomething() {
+    print "HELLO!"
+}
+
+// Test calling the functions
+y = square(5)
+z = cube(2)
+
+print y
+print z
+
+// Call procedure
+call writesomething
+
+// int should be any int (unconstrained)
+a: int = 42
+b: int = -100
+c: int = 999999
+
+print a
+print b
+print c

@@ -40,6 +40,9 @@ private:
         if (auto* funDecl = ctx->function_declaration()) {
             module->functions.push_back(buildFunc(funDecl)); return;
         }
+        if (auto* fnDecl = ctx->fn_declaration()) {
+            module->functions.push_back(buildFn(fnDecl)); return;
+        }
         if (auto* procCall = ctx->procedure_call()) {
             std::vector<ir::HirExpr> args;
             for (auto* e : procCall->expr()) args.push_back(buildExpr(e));
@@ -76,6 +79,47 @@ private:
         buildParams(ctx->parameter(), fn.params, true);  // func params are immutable
         fn.returnType = buildType(ctx->type());
         buildBody(ctx->function_body(), fn);
+        return fn;
+    }
+
+    ir::HirFunc buildFn(ZenithParser::Fn_declarationContext* ctx) {
+        ir::HirFunc fn;
+        fn.kind = ir::HirFunc::Kind::Fn;
+        fn.name = ctx->ID()->getText();
+        fn.isUnsafe = ctx->UNSAFE();
+        
+        // Type signature only: fn name : int -> int
+        if (ctx->function_type_signature()) {
+            fn.isTypeSignatureOnly = true;
+            auto* typeSig = ctx->function_type_signature();
+            auto types = typeSig->type();
+            if (types.size() >= 1) fn.paramType = buildType(types[0]);
+            if (types.size() >= 2) fn.returnType = buildType(types[1]);
+            
+            // Extract effects if present
+            if (typeSig->effect_list()) {
+                for (auto* effectId : typeSig->effect_list()->ID()) {
+                    fn.effects.push_back(effectId->getText());
+                }
+            }
+            return fn;
+        }
+        
+        // Traditional or lambda style
+        buildParams(ctx->parameter(), fn.params, true);  // fn params are immutable
+        fn.returnType = buildType(ctx->type());
+        
+        // Lambda-style: fn name (x) = expr
+        if (ctx->ASSIGN() && ctx->expr()) {
+            fn.exprBody = buildExpr(ctx->expr());
+            return fn;
+        }
+        
+        // Traditional: fn name(params) -> ret { ... }
+        if (ctx->function_body()) {
+            buildBody(ctx->function_body(), fn);
+        }
+        
         return fn;
     }
 
@@ -277,10 +321,10 @@ private:
     ir::HirExpr buildMulExpr(ZenithParser::Mul_exprContext* ctx) {
         if (!ctx) return ir::HirExpr::id("<error>");
 
-        auto primaries = ctx->primary();
-        if (primaries.empty()) return ir::HirExpr::id("<error>");
+        auto powerExprs = ctx->power_expr();
+        if (powerExprs.empty()) return ir::HirExpr::id("<error>");
 
-        ir::HirExpr result = buildPrimary(primaries[0]);
+        ir::HirExpr result = buildPowerExpr(powerExprs[0]);
 
         // Get all STAR and SLASH tokens
         auto starTokens = ctx->STAR();
@@ -288,7 +332,7 @@ private:
         size_t starIdx = 0, slashIdx = 0;
 
         // Handle multiplication/division operators
-        for (size_t i = 1; i < primaries.size(); ++i) {
+        for (size_t i = 1; i < powerExprs.size(); ++i) {
             ir::HirExpr::BinOpKind op = ir::HirExpr::BinOpKind::Mul;
 
             // Simplified: alternate between star and slash, preferring star if both exist
@@ -300,7 +344,22 @@ private:
                 slashIdx++;
             }
 
-            result = ir::HirExpr::binOp(op, result, buildPrimary(primaries[i]));
+            result = ir::HirExpr::binOp(op, result, buildPowerExpr(powerExprs[i]));
+        }
+        return result;
+    }
+
+    ir::HirExpr buildPowerExpr(ZenithParser::Power_exprContext* ctx) {
+        if (!ctx) return ir::HirExpr::id("<error>");
+
+        auto primaries = ctx->primary();
+        if (primaries.empty()) return ir::HirExpr::id("<error>");
+
+        ir::HirExpr result = buildPrimary(primaries[0]);
+
+        // Handle power operators (right-associative)
+        for (size_t i = 1; i < primaries.size(); ++i) {
+            result = ir::HirExpr::binOp(ir::HirExpr::BinOpKind::Power, result, buildPrimary(primaries[i]));
         }
         return result;
     }

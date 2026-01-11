@@ -10,6 +10,7 @@ simple_stmt
      | procedure_declaration
      | subroutine_declaration
      | function_declaration
+     | fn_declaration
      | procedure_call
      | function_call
      | UNSAFE LBRACE (stmt | NEWLINE)* RBRACE
@@ -70,7 +71,11 @@ add_expr
     ;
 
 mul_expr
-    : primary ((STAR | SLASH) primary)*
+    : power_expr ((STAR | SLASH) power_expr)*
+    ;
+
+power_expr
+    : primary (POWER primary)*
     ;
 
 primary
@@ -101,6 +106,23 @@ function_body;
 
 subroutine_declaration: UNSAFE? SUBROUTINE ID LPAREN (parameter (COMMA parameter)*)? RPAREN (ARROW type)?
 function_body;
+
+// fn declarations support multiple syntaxes and optional effect annotations
+fn_declaration
+    : UNSAFE? FN ID LPAREN (parameter (COMMA parameter)*)? RPAREN (ARROW type)? function_body  // traditional: fn name(params) -> ret { ... }
+    | UNSAFE? FN ID COLON function_type_signature                                              // type signature: fn name : int -> int
+    | UNSAFE? FN ID LPAREN (parameter (COMMA parameter)*)? RPAREN ASSIGN expr                 // lambda: fn name (x) = x**2
+    ;
+
+// Function type signature for declarations: type -> type (supports effects/monads)
+function_type_signature
+    : type ARROW type (PIPE effect_list)?  // type -> type | IO, Exception
+    ;
+
+// Effect/monad annotations for fn functions
+effect_list
+    : ID (COMMA ID)*
+    ;
 
 function_body
     : LBRACE (stmt | NEWLINE)* RBRACE

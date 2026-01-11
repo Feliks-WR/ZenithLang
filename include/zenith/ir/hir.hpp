@@ -43,7 +43,7 @@ struct HirType {
 
 struct HirExpr {
     enum class Kind { IntLit, FloatLit, BoolLit, StringLit, Id, Array, Call, Group, Unsafe, BinOp };
-    enum class BinOpKind { Add, Sub, Mul, Div, Concat };
+    enum class BinOpKind { Add, Sub, Mul, Div, Concat, Power };
 
     Kind kind{};
     int64_t intVal{};
@@ -88,7 +88,7 @@ struct HirStmt {
 };
 
 struct HirFunc {
-    enum class Kind { Proc, Subroutine, Func };
+    enum class Kind { Proc, Subroutine, Func, Fn };
     enum class Purity { None, Func, Pure, Math };  // None for proc/subroutine
 
     Kind kind{};
@@ -96,9 +96,12 @@ struct HirFunc {
     std::string name;
     std::vector<HirParam> params;
     std::optional<HirType> returnType;
+    std::optional<HirType> paramType;  // For type signature declarations
     std::vector<HirStmt> body;
     std::optional<HirExpr> exprBody;
+    std::vector<std::string> effects;  // Effect/monad annotations (IO, Exception, etc.)
     bool isUnsafe = false;
+    bool isTypeSignatureOnly = false;  // true for fn name : type -> type
 };
 
 struct HirModule {
