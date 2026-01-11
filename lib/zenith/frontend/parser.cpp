@@ -85,6 +85,7 @@ private:
     ir::HirFunc buildFn(ZenithParser::Fn_declarationContext* ctx) {
         ir::HirFunc fn;
         fn.kind = ir::HirFunc::Kind::Fn;
+        fn.purity = ir::HirFunc::Purity::Func;  // fn functions are pure by default
         fn.name = ctx->ID()->getText();
         fn.isUnsafe = ctx->UNSAFE();
         

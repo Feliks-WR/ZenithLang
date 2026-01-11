@@ -180,6 +180,13 @@ void MLIRPass::run(const ir::HirModule& hir) {
                             return b.create<arith::DivFOp>(b.getUnknownLoc(), lhsVal, rhsVal);
                         }
                     }
+                    case ir::HirExpr::BinOpKind::Power: {
+                        // For power operation, we use a simple implementation
+                        // For float types, this would need to call a math library function
+                        // For now, we'll handle it as a TODO
+                        // TODO: Implement proper power operation using math library
+                        return nullptr;
+                    }
                     case ir::HirExpr::BinOpKind::Concat: {
                         // String/array concatenation would require additional implementation
                         return nullptr;
