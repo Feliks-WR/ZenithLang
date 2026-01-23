@@ -1,0 +1,27 @@
+- [x] Verify that the copilot-instructions.md file in the .github directory is created.
+- [x] Clarify Project Requirements
+  - MLIR-based language compiler
+  - ANTLR grammar with separate lexer and parser
+  - C++ implementation with CMake build system
+- [x] Scaffold the Project
+  - Created directory structure
+  - CMakeLists.txt for LLVM/MLIR integration
+  - ANTLR grammar file (CustomLang.g4)
+  - MLIR dialect headers and implementations
+  - Main compiler driver
+- [ ] Customize the Project
+  - Grammar rules defined but not yet finalized
+  - Operation definitions need to be expanded
+  - Type system ready for extension
+  - AST builder visitor methods stubbed out
+- [ ] Install Required Extensions
+  - No VS Code extensions required for this C++ project
+- [ ] Compile the Project
+  - Pending: Requires LLVM/MLIR and ANTLR4 installation
+- [ ] Create and Run Task
+  - Build task can be created once dependencies are installed
+- [ ] Launch the Project
+  - Compiler will be available after successful build
+- [ ] Ensure Documentation is Complete
+  - README.md created with project overview
+  - Architecture and usage documented

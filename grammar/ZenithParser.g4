@@ -1,0 +1,61 @@
+// ANTLR4 Parser for Zenith
+parser grammar ZenithParser;
+
+options { tokenVocab=ZenithLexer; }
+
+program: NEWLINE* (statement (semi statement)* semi?)? NEWLINE* EOF;
+statement: varDeclaration | functionDecl | equation | ifStatement | whileStatement | forStatement 
+        | returnStatement | exprStatement | blockStatement;
+
+semi: (SEMICOLON | NEWLINE)+;
+
+// Forward declarations: x, y : real
+varDeclaration: identifierList COLON type;
+identifierList: IDENTIFIER (COMMA IDENTIFIER)*;
+
+// Function declarations
+functionDecl: FN IDENTIFIER LPAREN parameterList? RPAREN (ARROW type)? NEWLINE* blockStatement;
+parameterList: parameter (COMMA parameter)*;
+parameter: IDENTIFIER COLON type;
+
+// Equations: x + y = 3; or x = 5;
+equation: expression EQUALS expression;
+
+// Expression statement (for function calls like: println x, y)
+exprStatement: expression;
+
+// Blocks (for function bodies and if/else)
+blockStatement: LBRACE NEWLINE* (statement (semi statement)* semi?)? NEWLINE* RBRACE;
+ifStatement: IF expression NEWLINE* blockStatement (NEWLINE* ELSE NEWLINE* blockStatement)?;
+whileStatement: WHILE expression NEWLINE* blockStatement;
+forStatement: FOR IDENTIFIER IN expression NEWLINE* blockStatement;
+returnStatement: RETURN expression?;
+
+// Types
+type: IDENTIFIER (LBRACKET INTEGER RBRACKET)* | AMPERSAND type;
+
+// Expressions with function application: f x, y
+expression: logicalOrExpr;
+logicalOrExpr: logicalAndExpr (OR logicalAndExpr)*;
+logicalAndExpr: bitwiseOrExpr (AND bitwiseOrExpr)*;
+bitwiseOrExpr: bitwiseXorExpr (PIPE bitwiseXorExpr)*;
+bitwiseXorExpr: bitwiseAndExpr (CARET bitwiseAndExpr)*;
+bitwiseAndExpr: equalityExpr (AMPERSAND equalityExpr)*;
+equalityExpr: relationalExpr ((EQ | NEQ) relationalExpr)*;
+relationalExpr: shiftExpr ((LT | LE | GT | GE) shiftExpr)*;
+shiftExpr: additiveExpr ((LSHIFT | RSHIFT) additiveExpr)*;
+additiveExpr: multiplicativeExpr ((PLUS | MINUS) multiplicativeExpr)*;
+multiplicativeExpr: powerExpr ((STAR | DIV | MOD) powerExpr)*;      // Should be right-associative
+powerExpr: unaryExpr (POW unaryExpr)*;
+unaryExpr: (NOT | MINUS | TILDE | AMPERSAND) unaryExpr | callExpr;
+
+// Function application: f x y or f(x, y) or arr[i] or obj.field
+callExpr: primaryExpr (callSuffix)*;
+callSuffix: 
+    LBRACKET expression RBRACKET                    // array indexing: arr[0]
+    | DOT IDENTIFIER                                // member access: obj.field
+    | LPAREN (expression (COMMA expression)*)? RPAREN // function call: f(x, y)
+    | primaryExpr                                   // function application: f x
+    ;
+
+primaryExpr: INTEGER | FLOAT | STRING | TRUE | FALSE | IDENTIFIER | LPAREN expression RPAREN;
