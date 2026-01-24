@@ -14,6 +14,9 @@ grammar/.antlr/
 *.swo
 *~
 
+# Local env for MCP server (DO NOT commit)
+mcp_server/.env
+
 # OS
 .DS_Store
 Thumbs.db

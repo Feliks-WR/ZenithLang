@@ -8,6 +8,22 @@
 #include <sstream>
 #include <vector>
 
+// MLIR / LLVM are required dependencies for this project (see docs/AI_INSTRUCTIONS.md)
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/Module.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/DialectRegistry.h"
+#include "mlir/InitAllDialects.h"
+#include "mlir/InitAllPasses.h"
+#include "mlir/Parser.h"
+#include "mlir/ExecutionEngine/ExecutionEngine.h"
+#include "mlir/Target/LLVMIR/ModuleTranslation.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/raw_ostream.h"
+#include "ASTBuilder.h"
+
 using namespace antlr4;
 
 class ZenithVisitor : public ZenithParserBaseVisitor {
@@ -22,10 +38,15 @@ public:
 
     std::any visitVarDeclaration(ZenithParser::VarDeclarationContext *ctx) override {
         std::cout << "Declaration: ";
-        for (auto id : ctx->identifierList()->IDENTIFIER()) {
-            std::cout << id->getText() << " ";
+        if (ctx->identifierList()) {
+            for (auto id : ctx->identifierList()->IDENTIFIER()) {
+                std::cout << id->getText() << " ";
+            }
         }
-        std::cout << ": " << ctx->type()->getText() << "\n";
+        if (ctx->type()) {
+            std::cout << ": " << ctx->type()->getText();
+        }
+        std::cout << "\n";
         return nullptr;
     }
 
@@ -62,10 +83,10 @@ public:
 
     std::any visitIfStatement(ZenithParser::IfStatementContext *ctx) override {
         std::cout << "If: " << ctx->expression()->getText() << "\n";
-        visit(ctx->blockStatement(0));
+        if (ctx->blockStatement().size() > 0) visit(ctx->blockStatement(0));
         if (ctx->ELSE()) {
             std::cout << "Else:\n";
-            visit(ctx->blockStatement(1));
+            if (ctx->blockStatement().size() > 1) visit(ctx->blockStatement(1));
         }
         return nullptr;
     }
@@ -80,7 +101,7 @@ public:
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        std::cerr << "Usage: zenith <file>\n";
+        std::cerr << "Usage: zenith <file> [--emit-llvm|--jit]" << std::endl;
         return 1;
     }
 
@@ -109,9 +130,64 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Visit AST
+    // Visit AST and show parse info
     ZenithVisitor visitor;
     visitor.visit(tree);
+
+#ifdef USE_MLIR
+    mlir::MLIRContext context;
+    mlir::DialectRegistry registry;
+    mlir::registerAllDialects(registry);
+    mlir::registerAllPasses();
+    context.appendDialectRegistry(registry);
+
+    // Build MLIR module from AST
+    ASTBuilder astBuilder(&context);
+    astBuilder.visit(tree);
+    auto module = astBuilder.getModule();
+
+    if (!module) {
+        std::cerr << "Failed to build MLIR module\n";
+        return 1;
+    }
+
+    std::cout << "--- MLIR Module ---\n";
+    module->print(llvm::outs());
+    std::cout << "\n--- end MLIR ---\n";
+
+    for (int i = 2; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--emit-llvm") {
+            llvm::LLVMContext llvmContext;
+            auto llvmModule = mlir::translateModuleToLLVMIR(*module, llvmContext);
+            if (!llvmModule) {
+                std::cerr << "Failed to translate to LLVM IR\n";
+                return 1;
+            }
+            llvmModule->print(llvm::outs(), nullptr);
+            return 0;
+        }
+        if (arg == "--jit") {
+            auto maybeEngine = mlir::ExecutionEngine::create(*module);
+            if (!maybeEngine) {
+                llvm::errs() << "Failed to create ExecutionEngine\n";
+                return 1;
+            }
+            auto &engine = *maybeEngine;
+            int (*fn)();
+            if (engine.lookup("main", (void **)&fn)) {
+                llvm::errs() << "Lookup failed\n";
+                return 1;
+            }
+            int result = fn();
+            std::cout << "JIT result: " << result << "\n";
+            return 0;
+        }
+    }
+#else
+    (void)argc; (void)argv; // silence unused warnings
+    std::cout << "MLIR not available in this build; rebuild with MLIR to enable emit/jit modes.\n";
+#endif
 
     std::cout << "✓ Parsed successfully\n";
     return 0;

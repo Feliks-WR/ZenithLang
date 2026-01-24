@@ -10,13 +10,19 @@ statement: varDeclaration | functionDecl | equation | ifStatement | whileStateme
 semi: (SEMICOLON | NEWLINE)+;
 
 // Forward declarations: x, y : real
-varDeclaration: identifierList COLON type;
+varDeclaration: identifierList (COLON type)?;
 identifierList: IDENTIFIER (COMMA IDENTIFIER)*;
 
 // Function declarations
-functionDecl: FN IDENTIFIER LPAREN parameterList? RPAREN (ARROW type)? NEWLINE* blockStatement;
+functionDecl:
+        IDENTIFIER LPAREN parameterList? RPAREN (ARROW type)?
+        (
+                EQUALS expression
+            | EQUALS? NEWLINE* blockStatement
+        );
+
 parameterList: parameter (COMMA parameter)*;
-parameter: IDENTIFIER COLON type;
+parameter: IDENTIFIER (COLON type)?;
 
 // Equations: x + y = 3; or x = 5;
 equation: expression EQUALS expression;
@@ -25,10 +31,14 @@ equation: expression EQUALS expression;
 exprStatement: expression;
 
 // Blocks (for function bodies and if/else)
-blockStatement: LBRACE NEWLINE* (statement (semi statement)* semi?)? NEWLINE* RBRACE;
-ifStatement: IF expression NEWLINE* blockStatement (NEWLINE* ELSE NEWLINE* blockStatement)?;
-whileStatement: WHILE expression NEWLINE* blockStatement;
-forStatement: FOR IDENTIFIER IN expression NEWLINE* blockStatement;
+blockStatement:
+                        LBRACE NEWLINE* (statement (semi statement)* semi?)? NEWLINE* RBRACE
+                | NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT
+                ;
+
+ifStatement: IF expression (NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT | blockStatement) (NEWLINE* ELSE (NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT | blockStatement))?;
+whileStatement: WHILE expression (NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT | blockStatement);
+forStatement: FOR IDENTIFIER IN expression (NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT | blockStatement);
 returnStatement: RETURN expression?;
 
 // Types
@@ -45,8 +55,9 @@ equalityExpr: relationalExpr ((EQ | NEQ) relationalExpr)*;
 relationalExpr: shiftExpr ((LT | LE | GT | GE) shiftExpr)*;
 shiftExpr: additiveExpr ((LSHIFT | RSHIFT) additiveExpr)*;
 additiveExpr: multiplicativeExpr ((PLUS | MINUS) multiplicativeExpr)*;
-multiplicativeExpr: powerExpr ((STAR | DIV | MOD) powerExpr)*;      // Should be right-associative
-powerExpr: unaryExpr (POW unaryExpr)*;
+multiplicativeExpr: powerExpr ((STAR | DIV | MOD) powerExpr)*;
+// Make power (`**`) right-associative: unary ** power
+powerExpr: unaryExpr (POW powerExpr)?;
 unaryExpr: (NOT | MINUS | TILDE | AMPERSAND) unaryExpr | callExpr;
 
 // Function application: f x y or f(x, y) or arr[i] or obj.field
@@ -55,7 +66,7 @@ callSuffix:
     LBRACKET expression RBRACKET                    // array indexing: arr[0]
     | DOT IDENTIFIER                                // member access: obj.field
     | LPAREN (expression (COMMA expression)*)? RPAREN // function call: f(x, y)
-    | primaryExpr                                   // function application: f x
+        | primaryExpr (COMMA primaryExpr)*              // function application: f x, y, z
     ;
 
 primaryExpr: INTEGER | FLOAT | STRING | TRUE | FALSE | IDENTIFIER | LPAREN expression RPAREN;

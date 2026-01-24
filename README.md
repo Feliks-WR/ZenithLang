@@ -158,3 +158,7 @@ Modify the semantic analyzer to recognize built-in functions and lower them to a
 - [ANTLR Documentation](https://www.antlr.org/)
 - [LLVM Project](https://llvm.org/)
 - [Immutable Data Structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
+
+## AI & MCP Integration
+
+See `docs/AI_INSTRUCTIONS.md` for AI-facing guidance and local MCP server instructions. A minimal MCP server scaffold is available at `mcp_server/` — run it for local testing or to integrate simple AI workflows.

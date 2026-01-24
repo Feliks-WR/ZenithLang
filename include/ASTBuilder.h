@@ -1,27 +1,33 @@
 #ifndef CUSTOMLANG_ASTBUILDER_H
 #define CUSTOMLANG_ASTBUILDER_H
 
-#include "CustomLangBaseVisitor.h"
-#include "mlir/IR/Builder.h"
-#include "mlir/IR/Location.h"
-#include "mlir/IR/ModuleOp.h"
+#include "ZenithParserBaseVisitor.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/Module.h"
+#include "mlir/IR/BuiltinOps.h"
+
 namespace mlir::customlang {
 
-class ASTBuilder : public CustomLangBaseVisitor {
+class ASTBuilder : public ZenithParserBaseVisitor {
  public:
   ASTBuilder(mlir::MLIRContext *context);
 
   // Visitors - to be implemented
-  virtual std::any visitProgram(CustomLangParser::ProgramContext *ctx) override;
-  virtual std::any visitFunctionDecl(CustomLangParser::FunctionDeclContext *ctx) override;
-  virtual std::any visitVarDecl(CustomLangParser::VarDeclContext *ctx) override;
-  virtual std::any visitExpression(CustomLangParser::ExpressionContext *ctx) override;
+  virtual std::any visitProgram(ZenithParser::ProgramContext *ctx) override;
+  virtual std::any visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) override;
+  virtual std::any visitVarDeclaration(ZenithParser::VarDeclarationContext *ctx) override;
+  virtual std::any visitExpression(ZenithParser::ExpressionContext *ctx) override;
 
+  #ifdef USE_MLIR
   mlir::OwningOpRef<mlir::ModuleOp> getModule() { return std::move(module); }
+  #else
+  void *getModule() { return nullptr; }
+  #endif
 
  private:
   mlir::MLIRContext *context;
