@@ -35,6 +35,7 @@ file(GLOB ANTLR_GEN_SRC "${ANTLR_GEN_DIR}/*.cpp")
 
 add_executable(zenith
     src/main.cpp
+    src/CodeGenerator.cpp
     ${ANTLR_GEN_SRC}
 )
 
@@ -43,28 +44,32 @@ target_link_libraries(zenith
     antlr4-runtime
 )
 
-# MLIR / LLVM integration
-find_package(LLVM REQUIRED CONFIG)
-find_package(MLIR REQUIRED CONFIG)
-list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
-include(AddMLIR)
+# MLIR / LLVM integration (optional, for future emit-llvm / jit modes)
+find_package(LLVM CONFIG)
+find_package(MLIR CONFIG)
 
-include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-include_directories(SYSTEM ${MLIR_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-
-llvm_map_components_to_libnames(REQ_LLVM_LIBS support core irreader native)
-
-target_link_libraries(zenith
+if(LLVM_FOUND AND MLIR_FOUND)
+    list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
+    include(AddMLIR)
+    include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+    include_directories(SYSTEM ${MLIR_INCLUDE_DIRS})
+    add_definitions(${LLVM_DEFINITIONS})
+    add_definitions(-DUSE_MLIR)
+    
+    llvm_map_components_to_libnames(REQ_LLVM_LIBS support core irreader native)
+    target_link_libraries(zenith
         PRIVATE
         ${REQ_LLVM_LIBS}
         MLIRExecutionEngine
-        MLIRTargetLLVMIR
         MLIRTransforms
         MLIRParser
         MLIRIR
         MLIRSupport
-)
+    )
+    message(STATUS "✓ MLIR support enabled")
+else()
+    message(STATUS "⚠ MLIR not found; building parser-only mode")
+endif()
 
 enable_testing()
 

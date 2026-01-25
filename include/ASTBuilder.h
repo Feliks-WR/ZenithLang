@@ -8,7 +8,6 @@
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Location.h"
-#include "mlir/IR/Module.h"
 #include "mlir/IR/BuiltinOps.h"
 
 namespace mlir::customlang {
