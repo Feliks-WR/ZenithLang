@@ -1,5 +1,7 @@
 # CustomLang - MLIR-based Language
 
+![CI Status](https://github.com/Feliks-WR/ZenithLang/workflows/Zenith%20CI/badge.svg)
+
 An immutable-first programming language compiler built with MLIR (Multi-Level Intermediate Representation) and ANTLR.
 
 ## Key Features
@@ -158,6 +160,25 @@ Modify the semantic analyzer to recognize built-in functions and lower them to a
 - [ANTLR Documentation](https://www.antlr.org/)
 - [LLVM Project](https://llvm.org/)
 - [Immutable Data Structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
+
+## Testing
+
+The project uses **Google Test** for comprehensive testing. See [docs/TESTING.md](docs/TESTING.md) for details.
+
+### Quick Test Run
+```bash
+# Build and run all tests
+cmake -B build -G Ninja
+cmake --build build
+cd build && ctest --output-on-failure
+```
+
+### Test Coverage
+- ✅ Parser unit tests
+- ✅ Code generation tests
+- ✅ Integration tests
+- ✅ End-to-end compilation tests
+- ✅ CI/CD with GitHub Actions
 
 ## AI & MCP Integration
 

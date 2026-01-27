@@ -89,8 +89,11 @@ FOR: 'for';
 WHILE: 'while';
 RETURN: 'return';
 IN: 'in';
+PRINT: 'print';
+LET: 'let';
 TRUE: 'true';
 FALSE: 'false';
+NULL: 'null';
 
 PLUS: '+';
 MINUS: '-';

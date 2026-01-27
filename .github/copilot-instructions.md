@@ -9,19 +9,36 @@
   - ANTLR grammar file (CustomLang.g4)
   - MLIR dialect headers and implementations
   - Main compiler driver
-- [ ] Customize the Project
-  - Grammar rules defined but not yet finalized
-  - Operation definitions need to be expanded
-  - Type system ready for extension
-  - AST builder visitor methods stubbed out
-- [ ] Install Required Extensions
+- [x] Customize the Project
+  - Grammar rules defined and functional
+  - Code generator implementation complete
+  - C code emission working
+  - AST builder visitor methods implemented
+- [x] Install Required Extensions
   - No VS Code extensions required for this C++ project
-- [ ] Compile the Project
-  - Pending: Requires LLVM/MLIR and ANTLR4 installation
-- [ ] Create and Run Task
-  - Build task can be created once dependencies are installed
-- [ ] Launch the Project
-  - Compiler will be available after successful build
-- [ ] Ensure Documentation is Complete
-  - README.md created with project overview
+- [x] Compile the Project
+  - Successfully building with CMake
+  - ANTLR4 and dependencies configured
+- [x] Create and Run Task
+  - Build tasks configured in CMakeLists.txt
+  - Makefile created for convenient development
+- [x] Launch the Project
+  - Compiler executable builds and runs
+  - Test programs compile successfully
+- [x] **Formal Testing Infrastructure**
+  - **Google Test framework** integrated (26+ test cases)
+  - **CMake/CTest** configuration complete
+  - **Unit tests:** Parser and CodeGen validation
+  - **Integration tests:** End-to-end compilation
+  - **GitHub Actions CI/CD:** 3 automated workflows
+    - Main CI: Build, test, quality checks
+    - Coverage: Code coverage reporting
+    - Release: Multi-platform binary builds
+  - **Cross-platform:** Ubuntu and macOS support
+  - **Documentation:** Comprehensive testing guide
+  - **Makefile:** Convenient development targets
+- [x] Ensure Documentation is Complete
+  - README.md with CI badge
+  - docs/TESTING.md - Testing guide
+  - TESTING_INFRASTRUCTURE.md - Complete overview
   - Architecture and usage documented

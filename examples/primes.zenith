@@ -1,0 +1,36 @@
+// Prime number checker
+is_prime(n) {
+    if n < 2 {
+        return 0
+    }
+    
+    i = 2
+    while i * i <= n {
+        if n % i == 0 {
+            return 0
+        }
+        i = i + 1
+    }
+    
+    return 1
+}
+
+// Print primes up to n
+print_primes(limit) {
+    print "Prime numbers:"
+    num = 2
+    
+    while num <= limit {
+        if is_prime(num) {
+            print num
+        }
+        num = num + 1
+    }
+    
+    return 0
+}
+
+main() {
+    print_primes(30)
+    return 0
+}

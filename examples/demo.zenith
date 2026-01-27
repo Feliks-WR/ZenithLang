@@ -1,0 +1,52 @@
+// Enhanced Zenith Language Features Demo
+// Demonstrates: print statements, functions with parameters, improved control flow
+
+// Function with parameters
+greet(name) {
+    print "Hello, World!"
+    return 0
+}
+
+// Arithmetic and variables
+calculate(a, b) {
+    sum = a + b
+    product = a * b
+    print sum
+    print product
+    return sum
+}
+
+// Control flow with print
+fizzbuzz(n) {
+    i = 1
+    while i <= n {
+        if i % 15 == 0 {
+            print "FizzBuzz"
+        } else {
+            if i % 3 == 0 {
+                print "Fizz"
+            } else {
+                if i % 5 == 0 {
+                    print "Buzz"
+                } else {
+                    print i
+                }
+            }
+        }
+        i = i + 1
+    }
+    return 0
+}
+
+main() {
+    print "=== Zenith Language Demo ==="
+    
+    result = greet("User")
+    
+    value = calculate(10, 5)
+    
+    fizzbuzz(15)
+    
+    print "Done!"
+    return 0
+}

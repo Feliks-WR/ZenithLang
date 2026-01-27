@@ -1,0 +1,75 @@
+// Calculator with multiple operations
+add(x, y) {
+    return x + y
+}
+
+subtract(x, y) {
+    return x - y
+}
+
+multiply(x, y) {
+    return x * y
+}
+
+divide(x, y) {
+    if y == 0 {
+        print "Error: Division by zero"
+        return 0
+    }
+    return x / y
+}
+
+power(base, exp) {
+    result = 1
+    i = 0
+    
+    while i < exp {
+        result = result * base
+        i = i + 1
+    }
+    
+    return result
+}
+
+factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    
+    result = 1
+    i = 2
+    
+    while i <= n {
+        result = result * i
+        i = i + 1
+    }
+    
+    return result
+}
+
+main() {
+    print "=== Calculator Demo ==="
+    
+    a = 10
+    b = 5
+    
+    print "Addition:"
+    print add(a, b)
+    
+    print "Subtraction:"
+    print subtract(a, b)
+    
+    print "Multiplication:"
+    print multiply(a, b)
+    
+    print "Division:"
+    print divide(a, b)
+    
+    print "Power (2^10):"
+    print power(2, 10)
+    
+    print "Factorial (5!):"
+    print factorial(5)
+    
+    return 0
+}

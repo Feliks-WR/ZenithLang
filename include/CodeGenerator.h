@@ -16,6 +16,12 @@ class CodeGenerator : public ZenithParserBaseVisitor {
   std::any visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) override;
   std::any visitVarDeclaration(ZenithParser::VarDeclarationContext *ctx) override;
   std::any visitExpression(ZenithParser::ExpressionContext *ctx) override;
+  std::any visitReturnStatement(ZenithParser::ReturnStatementContext *ctx) override;
+  std::any visitPrintStatement(ZenithParser::PrintStatementContext *ctx) override;
+  std::any visitIfStatement(ZenithParser::IfStatementContext *ctx) override;
+  std::any visitWhileStatement(ZenithParser::WhileStatementContext *ctx) override;
+  std::any visitEquation(ZenithParser::EquationContext *ctx) override;
+  std::any visitBlockStatement(ZenithParser::BlockStatementContext *ctx) override;
   std::any visitCallExpr(ZenithParser::CallExprContext *ctx) override;
   std::any visitPrimaryExpr(ZenithParser::PrimaryExprContext *ctx) override;
 

@@ -71,10 +71,69 @@ else()
     message(STATUS "⚠ MLIR not found; building parser-only mode")
 endif()
 
+# Testing with Google Test
 enable_testing()
+find_package(GTest)
 
-# Add a simple parsing test that runs the `zenith` binary on a sample file
-add_test(NAME parse_basic COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_basic.zenith)
+if(GTest_FOUND)
+    # Parser unit tests
+    add_executable(test_parser
+        tests/test_parser.cpp
+        ${ANTLR_GEN_SRC}
+    )
+    target_link_libraries(test_parser
+        PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        antlr4-runtime
+    )
+    target_include_directories(test_parser PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${ANTLR_GEN_DIR}"
+    )
+    add_test(NAME ParserTests COMMAND test_parser)
+    
+    # Code generator unit tests
+    add_executable(test_codegen
+        tests/test_codegen.cpp
+        src/CodeGenerator.cpp
+        ${ANTLR_GEN_SRC}
+    )
+    target_link_libraries(test_codegen
+        PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        antlr4-runtime
+    )
+    target_include_directories(test_codegen PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${ANTLR_GEN_DIR}"
+    )
+    add_test(NAME CodeGenTests COMMAND test_codegen)
+    
+    # Integration tests
+    add_executable(integration_test
+        tests/integration_test.cpp
+    )
+    target_link_libraries(integration_test
+        PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+    )
+    add_test(NAME IntegrationTests COMMAND integration_test)
+    
+    message(STATUS "✓ Google Test framework found - unit tests enabled")
+else()
+    message(WARNING "⚠ Google Test not found - tests disabled")
+    message(STATUS "  Install with: sudo apt-get install libgtest-dev")
+endif()
+
+# Add a simple end-to-end test that compiles a sample file
+add_test(NAME compile_basic COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_basic.zenith -o test_output)
+set_tests_properties(compile_basic PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 message(STATUS "✓ Zenith compiler built successfully")
 message(STATUS "  Run: ./zenith <file.zenith>")
+message(STATUS "  Test: ctest --output-on-failure")

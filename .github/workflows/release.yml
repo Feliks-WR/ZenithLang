@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    name: Build Release Binaries
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          gcc \
+          g++ \
+          libgtest-dev \
+          libantlr4-runtime-dev \
+          antlr4
+    
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake ninja antlr4 antlr4-cpp-runtime googletest
+    
+    - name: Build
+      run: |
+        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        cmake --build build
+    
+    - name: Test
+      run: |
+        cd build
+        ctest --output-on-failure
+    
+    - name: Package
+      run: |
+        cd build
+        tar -czf zenith-${{ runner.os }}.tar.gz zenith
+    
+    - name: Upload Release Asset
+      uses: actions/upload-artifact@v4
+      with:
+        name: zenith-${{ runner.os }}
+        path: build/zenith-${{ runner.os }}.tar.gz

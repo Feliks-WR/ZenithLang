@@ -1,0 +1,54 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [ master, main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  coverage:
+    name: Code Coverage Report
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          gcc \
+          g++ \
+          libgtest-dev \
+          libantlr4-runtime-dev \
+          antlr4 \
+          lcov
+    
+    - name: Build with coverage
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_CXX_FLAGS="--coverage"
+        cmake --build build
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure
+    
+    - name: Generate coverage report
+      run: |
+        cd build
+        lcov --capture --directory . --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info
+        lcov --list coverage.info
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./build/coverage.info
+        fail_ci_if_error: false

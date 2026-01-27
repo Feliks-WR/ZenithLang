@@ -5,7 +5,7 @@ options { tokenVocab=ZenithLexer; }
 
 program: NEWLINE* (statement (semi statement)* semi?)? NEWLINE* EOF;
 statement: varDeclaration | functionDecl | equation | ifStatement | whileStatement | forStatement 
-        | returnStatement | exprStatement | blockStatement;
+        | returnStatement | printStatement | exprStatement | blockStatement;
 
 semi: (SEMICOLON | NEWLINE)+;
 
@@ -40,6 +40,7 @@ ifStatement: IF expression (NEWLINE INDENT (statement (semi statement)* semi?)? 
 whileStatement: WHILE expression (NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT | blockStatement);
 forStatement: FOR IDENTIFIER IN expression (NEWLINE INDENT (statement (semi statement)* semi?)? DEDENT | blockStatement);
 returnStatement: RETURN expression?;
+printStatement: PRINT expression (COMMA expression)*;
 
 // Types
 type: IDENTIFIER (LBRACKET INTEGER RBRACKET)* | AMPERSAND type;
