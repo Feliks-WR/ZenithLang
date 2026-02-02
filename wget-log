@@ -1,0 +1,11 @@
+--2026-01-29 19:11:31--  https://apt.kitware.com/keys/kitware-archive-latest.asc
+Resolving apt.kitware.com (apt.kitware.com)... 66.194.253.25
+Connecting to apt.kitware.com (apt.kitware.com)|66.194.253.25|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3963 (3.9K) [application/pgp-keys]
+Saving to: ‘STDOUT’
+
+-                              0%[                                               ]       0  --.-KB/s               -                            100%[==============================================>]   3.87K  --.-KB/s    in 0s      
+
+2026-01-29 19:11:32 (394 MB/s) - written to stdout [3963/3963]
+
