@@ -48,6 +48,7 @@ class DependentType {
     Bool,
     Pointer,
     Array,
+    Set,
     Function,
     Named
   };
@@ -61,6 +62,9 @@ class DependentType {
   // For arrays: element type and length parameter
   std::shared_ptr<DependentType> arrayElementType;
   std::string arrayLengthParam;  // e.g., "N"
+  
+  // For sets: element type
+  std::shared_ptr<DependentType> setElementType;
   
   // Dependent type constraints
   std::vector<std::shared_ptr<Constraint>> constraints;
@@ -81,6 +85,8 @@ class DependentType {
   static std::shared_ptr<DependentType> makeArray(
       const std::shared_ptr<DependentType> &elemType,
       const std::string &lengthParam);
+  static std::shared_ptr<DependentType> makeSet(
+      const std::shared_ptr<DependentType> &elemType);
   static std::shared_ptr<DependentType> makeFloat();
   static std::shared_ptr<DependentType> makeBool();
   static std::shared_ptr<DependentType> makeNamed(const std::string &name);

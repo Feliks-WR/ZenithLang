@@ -47,6 +47,9 @@ include_directories(
 # Collect generated ANTLR files
 file(GLOB ANTLR_GEN_SRC "${ANTLR_GEN_DIR}/*.cpp")
 
+# Disable warnings for ANTLR-generated code (version compatibility issues)
+set_source_files_properties(${ANTLR_GEN_SRC} PROPERTIES COMPILE_FLAGS "-Wno-error")
+
 add_executable(zenith
     src/main.cpp
     src/CodeGenerator.cpp

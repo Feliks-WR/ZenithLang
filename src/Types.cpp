@@ -85,6 +85,13 @@ std::shared_ptr<DependentType> DependentType::makeArray(
   return type;
 }
 
+std::shared_ptr<DependentType> DependentType::makeSet(
+    const std::shared_ptr<DependentType> &elemType) {
+  auto type = std::make_shared<DependentType>(Set, "set");
+  type->setElementType = elemType;
+  return type;
+}
+
 std::shared_ptr<DependentType> DependentType::makeFloat() {
   return std::make_shared<DependentType>(Float, "float");
 }
@@ -133,6 +140,13 @@ std::string DependentType::toString() const {
       ss << "[" << (arrayElementType ? arrayElementType->toString() : "?");
       ss << "; " << arrayLengthParam << "]";
       break;
+    case Set:
+      ss << "{";
+      if (setElementType) {
+        ss << setElementType->toString();
+      }
+      ss << "}";
+      break;
     case Function:
       ss << "(";
       for (size_t i = 0; i < paramTypes.size(); ++i) {
@@ -179,6 +193,14 @@ bool DependentType::isCompatibleWith(
     }
     return arrayElementType->isCompatibleWith(other->arrayElementType) &&
            arrayLengthParam == other->arrayLengthParam;
+  }
+  
+  // For sets, element types must be compatible
+  if (kind == Set) {
+    if (!setElementType || !other->setElementType) {
+      return setElementType == other->setElementType;
+    }
+    return setElementType->isCompatibleWith(other->setElementType);
   }
   
   return true;
