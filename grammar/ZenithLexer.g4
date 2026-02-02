@@ -94,7 +94,6 @@ LET: 'let';
 TRUE: 'true';
 FALSE: 'false';
 NULL: 'null';
-IT: 'it';
 
 PLUS: '+';
 MINUS: '-';
@@ -130,7 +129,6 @@ DOT: '.';
 COLON: ':';
 ARROW: '->';
 EQUALS: '=';
-DOTDOT: '..';
 
 INTEGER: [0-9]+;
 FLOAT: [0-9]+ '.' [0-9]+;

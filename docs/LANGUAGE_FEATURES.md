@@ -9,7 +9,6 @@ Zenith is a modern, compiled programming language that transpiles to C for maxim
 ### 1. Functions
 
 #### Basic Functions
-
 ```zenith
 main() {
     return 0
@@ -17,7 +16,6 @@ main() {
 ```
 
 #### Functions with Parameters
-
 ```zenith
 add(a, b) {
     return a + b
@@ -30,7 +28,6 @@ multiply(x, y) {
 ```
 
 #### Function Calls
-
 ```zenith
 main() {
     sum = add(5, 3)
@@ -55,7 +52,6 @@ main() {
 ### 3. Control Flow
 
 #### If Statements
-
 ```zenith
 main() {
     x = 10
@@ -69,7 +65,6 @@ main() {
 ```
 
 #### If-Else
-
 ```zenith
 check(n) {
     if n < 0 {
@@ -81,7 +76,6 @@ check(n) {
 ```
 
 #### Nested Conditions
-
 ```zenith
 classify(x) {
     if x < 0 {
@@ -97,7 +91,6 @@ classify(x) {
 ```
 
 #### While Loops
-
 ```zenith
 countdown(n) {
     i = n
@@ -129,7 +122,6 @@ main() {
 ### 5. Operators
 
 #### Arithmetic
-
 - `+` Addition
 - `-` Subtraction
 - `*` Multiplication
@@ -138,7 +130,6 @@ main() {
 - `**` Power (not yet implemented in codegen)
 
 #### Comparison
-
 - `==` Equal
 - `!=` Not equal
 - `<` Less than
@@ -147,13 +138,11 @@ main() {
 - `>=` Greater than or equal
 
 #### Logical
-
 - `&&` AND
 - `||` OR
 - `!` NOT
 
 #### Bitwise
-
 - `&` AND
 - `|` OR
 - `^` XOR
@@ -164,15 +153,12 @@ main() {
 ### 6. Data Types
 
 #### Supported Types
-
 - `int` - Integer numbers
 - `float` - Floating-point numbers
 - `string` - Text literals
 
 #### Type Inference
-
 Types are automatically inferred from the value:
-
 ```zenith
 x = 42        // int
 y = 3.14      // float
@@ -198,7 +184,6 @@ main() {
 ## Example Programs
 
 ### Fibonacci Sequence
-
 ```zenith
 fibonacci(n) {
     a = 0
@@ -224,7 +209,6 @@ main() {
 ```
 
 ### Prime Number Checker
-
 ```zenith
 is_prime(n) {
     if n < 2 {
@@ -254,7 +238,6 @@ main() {
 ```
 
 ### Factorial Calculator
-
 ```zenith
 factorial(n) {
     if n <= 1 {
@@ -283,14 +266,12 @@ main() {
 ## Compilation
 
 ### Basic Usage
-
 ```bash
 zenith program.zenith
 ./program
 ```
 
 ### Output Options
-
 ```bash
 # Specify output file
 zenith program.zenith -o myprogram
@@ -353,7 +334,6 @@ See the `examples/` directory for complete working programs:
 ## Testing
 
 Run the test suite:
-
 ```bash
 cd build
 ctest --output-on-failure

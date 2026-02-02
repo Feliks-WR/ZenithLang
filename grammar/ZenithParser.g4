@@ -42,37 +42,8 @@ forStatement: FOR IDENTIFIER IN expression (NEWLINE INDENT (statement (semi stat
 returnStatement: RETURN expression?;
 printStatement: PRINT expression (COMMA expression)*;
 
-// Types with dependent type support
-type: dependentType;
-
-dependentType: baseType constraint?;
-
-baseType: 
-    IDENTIFIER                           // basic types: int, float, bool, etc
-    | pointerType                        // pointer: *T
-    | arrayType                          // array: [T; N]
-    ;
-
-pointerType: STAR baseType;
-
-arrayType: LBRACKET baseType SEMICOLON IDENTIFIER RBRACKET;
-
-// Constraints: {it != 0}, {(!=0)}, {nonnull}, {1..10}
-constraint: LBRACE constraintExpr RBRACE;
-
-constraintExpr:
-    IDENTIFIER EQ INTEGER                // single value: 5
-    | INTEGER DOTDOT INTEGER             // range: 1..10
-    | predicateExpr                      // predicate: it != 0 or (!=0)
-    | IDENTIFIER                         // named constraint: nonnull
-    ;
-
-predicateExpr:
-    LPAREN comparisonOp INTEGER RPAREN   // implicit: (!=0)
-    | IT comparisonOp INTEGER            // explicit: it != 0
-    ;
-
-comparisonOp: EQ | NEQ | LT | LE | GT | GE;
+// Types
+type: IDENTIFIER (LBRACKET INTEGER RBRACKET)* | AMPERSAND type;
 
 // Expressions with function application: f x, y
 expression: logicalOrExpr;
