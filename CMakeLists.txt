@@ -9,15 +9,28 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(ANTLR_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/antlr_gen")
 file(MAKE_DIRECTORY "${ANTLR_GEN_DIR}")
 
+# Try to find antlr4 command or use a jar file
+find_program(ANTLR4_EXECUTABLE NAMES antlr4 antlr)
+if(NOT ANTLR4_EXECUTABLE)
+    set(ANTLR4_JAR_PATH "/usr/local/lib/antlr-4.10.1-complete.jar")
+    if(EXISTS "${ANTLR4_JAR_PATH}")
+        set(ANTLR4_COMMAND java -jar "${ANTLR4_JAR_PATH}")
+    else()
+        message(FATAL_ERROR "ANTLR4 not found. Install with: sudo apt-get install antlr4")
+    endif()
+else()
+    set(ANTLR4_COMMAND "${ANTLR4_EXECUTABLE}")
+endif()
+
 execute_process(
-    COMMAND antlr4_new -Dlanguage=Cpp -visitor -no-listener 
+    COMMAND ${ANTLR4_COMMAND} -Dlanguage=Cpp -visitor -no-listener 
             -o "${ANTLR_GEN_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/grammar/ZenithLexer.g4"
     COMMAND_ERROR_IS_FATAL ANY
 )
 
 execute_process(
-    COMMAND antlr4_new -Dlanguage=Cpp -visitor -no-listener
+    COMMAND ${ANTLR4_COMMAND} -Dlanguage=Cpp -visitor -no-listener
             -o "${ANTLR_GEN_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/grammar/ZenithParser.g4"
     COMMAND_ERROR_IS_FATAL ANY
@@ -28,6 +41,7 @@ include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${ANTLR_GEN_DIR}"
     "/usr/local/include"
+    "/usr/include/antlr4-runtime"
 )
 
 # Collect generated ANTLR files
@@ -36,6 +50,8 @@ file(GLOB ANTLR_GEN_SRC "${ANTLR_GEN_DIR}/*.cpp")
 add_executable(zenith
     src/main.cpp
     src/CodeGenerator.cpp
+    src/Types.cpp
+    src/TypeChecker.cpp
     ${ANTLR_GEN_SRC}
 )
 
@@ -110,6 +126,25 @@ if(GTest_FOUND)
         "${ANTLR_GEN_DIR}"
     )
     add_test(NAME CodeGenTests COMMAND test_codegen)
+    
+    # Dependent types unit tests
+    add_executable(test_dependent_types
+        tests/test_dependent_types.cpp
+        src/Types.cpp
+        src/TypeChecker.cpp
+        ${ANTLR_GEN_SRC}
+    )
+    target_link_libraries(test_dependent_types
+        PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        antlr4-runtime
+    )
+    target_include_directories(test_dependent_types PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${ANTLR_GEN_DIR}"
+    )
+    add_test(NAME DependentTypesTests COMMAND test_dependent_types)
     
     # Integration tests
     add_executable(integration_test
