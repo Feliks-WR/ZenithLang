@@ -50,30 +50,6 @@ An immutable-first programming language compiler built with MLIR (Multi-Level In
 - Supports array types: `i32[10]`
 - Supports pointer/reference types: `&i32`
 
-### Dependent Types (New!)
-
-Zenith now supports **dependent types** for compile-time safety verification:
-
-```zenith
-// Integer with range constraint
-age : int {1..120}
-
-// Non-zero integer for safe division
-divisor : int {it != 0}
-x = 10 / divisor  // Type-checked: divisor != 0
-
-// Array with length parameter
-buffer : [int; 100]
-i : int {0..99}
-value = buffer[i]  // Type-checked: 0 <= i < 100
-
-// Non-null pointer
-ptr : *int {nonnull}
-deref = *ptr  // Safe: pointer guaranteed non-null
-```
-
-For detailed documentation, see [docs/DEPENDENT_TYPES.md](docs/DEPENDENT_TYPES.md)
-
 ### Immutability Constraints
 
 - Variables declared with `let` are immutable
