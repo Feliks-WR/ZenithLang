@@ -93,7 +93,7 @@ PRINT: 'print';
 LET: 'let';
 TRUE: 'true';
 FALSE: 'false';
-NULL: 'null';
+NIL: 'null';
 IT: 'it';
 
 PLUS: '+';

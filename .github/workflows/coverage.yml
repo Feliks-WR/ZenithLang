@@ -25,8 +25,13 @@ jobs:
           g++ \
           libgtest-dev \
           libantlr4-runtime-dev \
-          antlr4 \
+          default-jre \
           lcov
+        
+        # Download ANTLR 4.10.1 jar for code generation (compatible with runtime 4.10)
+        sudo mkdir -p /usr/local/lib
+        sudo wget -q -O /usr/local/lib/antlr-4.10.1-complete.jar \
+          https://repo1.maven.org/maven2/org/antlr/antlr4/4.10.1/antlr4-4.10.1-complete.jar
     
     - name: Build with coverage
       run: |
