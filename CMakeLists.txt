@@ -36,6 +36,8 @@ file(GLOB ANTLR_GEN_SRC "${ANTLR_GEN_DIR}/*.cpp")
 add_executable(zenith
     src/main.cpp
     src/CodeGenerator.cpp
+    src/Types.cpp
+    src/TypeChecker.cpp
     ${ANTLR_GEN_SRC}
 )
 
@@ -110,6 +112,25 @@ if(GTest_FOUND)
         "${ANTLR_GEN_DIR}"
     )
     add_test(NAME CodeGenTests COMMAND test_codegen)
+    
+    # Dependent types unit tests
+    add_executable(test_dependent_types
+        tests/test_dependent_types.cpp
+        src/Types.cpp
+        src/TypeChecker.cpp
+        ${ANTLR_GEN_SRC}
+    )
+    target_link_libraries(test_dependent_types
+        PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        antlr4-runtime
+    )
+    target_include_directories(test_dependent_types PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${ANTLR_GEN_DIR}"
+    )
+    add_test(NAME DependentTypesTests COMMAND test_dependent_types)
     
     # Integration tests
     add_executable(integration_test
