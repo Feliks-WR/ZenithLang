@@ -93,8 +93,13 @@ PRINT: 'print';
 LET: 'let';
 TRUE: 'true';
 FALSE: 'false';
+<<<<<<< HEAD
 NIL: 'null';
 IT: 'it';
+=======
+NULL: 'null';
+NOT_WORD: 'not';
+>>>>>>> f44d684 (Add initial implementation of Zenith parser and visitor classes)
 
 PLUS: '+';
 MINUS: '-';
@@ -126,6 +131,7 @@ LBRACKET: '[';
 RBRACKET: ']';
 SEMICOLON: ';';
 COMMA: ',';
+DOTDOT: '..';  // Must come before DOT
 DOT: '.';
 COLON: ':';
 ARROW: '->';

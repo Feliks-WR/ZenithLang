@@ -42,6 +42,7 @@ forStatement: FOR IDENTIFIER IN expression (NEWLINE INDENT (statement (semi stat
 returnStatement: RETURN expression?;
 printStatement: PRINT expression (COMMA expression)*;
 
+<<<<<<< HEAD
 // Types with dependent type support
 type: dependentType;
 
@@ -73,6 +74,35 @@ predicateExpr:
     ;
 
 comparisonOp: EQ | NEQ | LT | LE | GT | GE;
+=======
+// Types with optional dependent type predicates
+type: baseType dependentPredicate?;
+baseType: innerType (LBRACKET INTEGER RBRACKET)* | AMPERSAND baseType;
+innerType: LBRACKET baseType RBRACKET | IDENTIFIER;
+dependentPredicate: LBRACE predicate RBRACE;
+// Dependent type predicates
+// Examples: {!= 0}, {not blank}, {1..10}, {sorted}, {n > 0}, {42}, etc.
+predicate: rangePredicate | infixPredicate | unaryPredicate | complexPredicate | predicateValue;
+
+rangePredicate: predicateValue DOTDOT predicateValue;
+
+// Infix predicates: left operand is implicit (comparison with the value itself)
+// Example: {!= 0} means "not equal to 0"
+infixPredicate: predicateOp predicateValue;
+
+// Unary: -x, not x (for things like {-1}, {not something})
+unaryPredicate: (NOT | NOT_WORD | MINUS) predicateValue;
+
+// Complex: sorted, blank, custom_check(x)
+complexPredicate: IDENTIFIER (LPAREN predicateArgList? RPAREN)?;
+
+predicateArgList: predicate (COMMA predicate)*;
+
+// Predicate values (literals and identifiers, no expressions to avoid left recursion)
+predicateValue: IDENTIFIER | INTEGER | FLOAT | STRING | LPAREN predicate RPAREN;
+
+predicateOp: EQ | NEQ | LT | LE | GT | GE | PLUS | MINUS | STAR | DIV | MOD | AND | OR;
+>>>>>>> f44d684 (Add initial implementation of Zenith parser and visitor classes)
 
 // Expressions with function application: f x, y
 expression: logicalOrExpr;
@@ -96,7 +126,6 @@ callSuffix:
     LBRACKET expression RBRACKET                    // array indexing: arr[0]
     | DOT IDENTIFIER                                // member access: obj.field
     | LPAREN (expression (COMMA expression)*)? RPAREN // function call: f(x, y)
-        | primaryExpr (COMMA primaryExpr)*              // function application: f x, y, z
     ;
 
 primaryExpr: INTEGER | FLOAT | STRING | TRUE | FALSE | IDENTIFIER | LPAREN expression RPAREN;

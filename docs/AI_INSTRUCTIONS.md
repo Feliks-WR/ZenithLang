@@ -1,1 +1,1 @@
-MLIR and LLVM are dependencies. Do NOT use #ifdef USE_MLIR etc.
+# MLIR and LLVM are dependencies. Do NOT use #ifdef USE_MLIR etc.

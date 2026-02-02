@@ -1,5 +1,6 @@
 # Dependent Types Implementation Summary
 
+<<<<<<< HEAD
 ## Completed Implementation
 
 This document summarizes the full dependent types system implementation for the Zenith language, including syntax, type system, type checking, and comprehensive testing.
@@ -303,3 +304,101 @@ The dependent types system is now fully operational, providing:
 - Seamless integration with existing compiler infrastructure
 
 Users can now write safer code with compiler-verified invariants, catching bugs at compile-time rather than runtime.
+=======
+## Overview
+Successfully added support for dependent types to the Zenith language compiler. Dependent types allow attaching predicates to types to express constraints and properties.
+
+## Changes Made
+
+### Lexer (`grammar/ZenithLexer.g4`)
+- Added `NOT_WORD` token for the `not` keyword (alongside existing `!` operator)
+- Added `DOTDOT` token for range syntax (`..`), ensuring it's lexed before single `DOT`
+
+### Parser (`grammar/ZenithParser.g4`)
+- Updated `type` rule to support optional dependent predicates
+- Refactored `baseType` to support both simple and complex types
+- Added new grammar rules:
+  - `dependentPredicate`: `LBRACE predicate RBRACE`
+  - `predicate`: Main rule for parsing various predicate types
+  - `rangePredicate`: For range constraints (e.g., `1..10`)
+  - `infixPredicate`: For operator constraints (e.g., `!= 0`)
+  - `unaryPredicate`: For unary operations (e.g., `not x`)
+  - `complexPredicate`: For named predicates (e.g., `sorted`)
+  - `predicateValue`: For literals and identifiers
+  - `predicateOp`: For comparison and arithmetic operators
+
+### Type System
+Supported syntax examples:
+```zenith
+// Parameter constraints
+divide(a: int {!= 0}, b: int {> 0}) -> real
+
+// Return type constraints
+getPositive() -> int {> 0}
+
+// Variable annotations
+x: int {!= 0}
+score: int {0..100}
+name: str {not blank}
+```
+
+## Predicate Syntax
+
+### Operators Supported
+- Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Logical: `&&`, `||`
+- Negation: `!` and `not` keywords
+
+### Predicate Forms
+1. **Infix**: `{!= 0}` - comparison with implicit operand
+2. **Range**: `{1..10}` - inclusive range
+3. **Unary**: `{!x}`, `{not x}` - unary operations
+4. **Complex**: `{sorted}`, `{blank}` - named predicates
+
+## Testing
+
+### Test Coverage
+- **test_simple_dep.zenith**: Single dependent type declaration
+- **test_dependent_types.zenith**: Comprehensive examples with functions and variables
+- All existing tests continue to pass
+
+### Test Results
+```
+ParserTests .......................... PASSED
+CodeGenTests ......................... PASSED
+IntegrationTests ..................... PASSED
+compile_basic ........................ PASSED
+```
+
+All 11 test files parse successfully (1 invalid syntax file intentionally fails).
+
+## Status
+
+✅ **Syntax Parsing**: Complete
+- Grammar accepts all dependent type syntax
+- Lexer correctly tokenizes all related symbols
+- Parser successfully builds AST with dependent types
+
+📝 **Code Generation**: Parsed but not enforced
+- Dependent types are recognized in the AST
+- Currently passed through but not validated
+- Ready for future semantic analysis implementation
+
+🔮 **Future Enhancements**
+- Compile-time predicate verification
+- Runtime assertion generation
+- Better error messages for predicate violations
+- Integration with code generation for checks
+
+## Files Modified
+- `grammar/ZenithLexer.g4` - Added tokens
+- `grammar/ZenithParser.g4` - Added predicate grammar rules
+- `tests/test_dependent_types.zenith` - New comprehensive test
+- `docs/DEPENDENT_TYPES.md` - Feature documentation
+
+## Backward Compatibility
+✅ All existing code continues to compile without modification
+✅ No breaking changes to syntax or semantics
+✅ Types without dependent predicates work as before
+>>>>>>> f44d684 (Add initial implementation of Zenith parser and visitor classes)

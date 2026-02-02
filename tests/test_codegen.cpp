@@ -8,12 +8,11 @@
 #include "ZenithLexer.h"
 #include "ZenithParser.h"
 #include "CodeGenerator.h"
-#include <sstream>
 
 using namespace antlr4;
 
 class CodeGenTest : public ::testing::Test {
-protected:
+  protected:
     std::string generateCode(const std::string& input) {
         ANTLRInputStream inputStream(input);
         ZenithLexer lexer(&inputStream);

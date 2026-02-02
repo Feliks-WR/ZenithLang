@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependent Types System for Zenith Language
 
 ## Overview
@@ -269,3 +270,136 @@ constraint: LBRACE constraintExpr RBRACE;
 3. **Refinement Types**: Support more expressive constraints
 4. **Dependent Function Types**: Functions with dependent arguments and return types
 5. **Type-level Computation**: Enable compile-time value computation
+=======
+# Dependent Types in Zenith
+
+Dependent types are now supported in the Zenith language! They allow you to attach predicates to types to express constraints and properties.
+
+## Syntax
+
+The basic syntax for dependent types is:
+
+```
+Type {predicate}
+```
+
+Where `Type` is any valid Zenith type and `predicate` is a constraint expression.
+
+## Examples
+
+### Simple Constraints
+
+```zenith
+// Non-zero integer
+x: int {!= 0}
+
+// Positive integer
+y: int {> 0}
+
+// Zero or positive
+z: int {>= 0}
+```
+
+### Range Constraints
+
+```zenith
+// Value between 1 and 10
+score: int {1..10}
+
+// Value between 0 and 100
+percentage: int {0..100}
+```
+
+### Keyword Constraints
+
+Both `!` and `not` are supported for negation:
+
+```zenith
+// Non-empty string (using !)
+name: str {!blank}
+
+// Non-empty string (using not)
+title: str {not blank}
+```
+
+### Function Parameters
+
+```zenith
+divide(a: int {!= 0}, b: int {> 0}) -> real {
+    return a / b
+}
+
+getScore(x: int {0..100}) -> int {
+    return x
+}
+```
+
+### Function Return Types
+
+```zenith
+getPositive() -> int {> 0} {
+    return 42
+}
+```
+
+### Array Types
+
+```zenith
+// Array of integers (syntax in progress)
+numbers: [int] {sorted}
+```
+
+## Predicate Types
+
+### Infix Predicates
+
+Used for comparing the value to a literal:
+
+```
+{!= 0}    // not equal to 0
+{> 5}     // greater than 5
+{<= 100}  // less than or equal to 100
+{== 42}   // equal to 42
+```
+
+### Range Predicates
+
+Used to constrain to a range:
+
+```
+{1..10}     // between 1 and 10
+{0..100}    // between 0 and 100
+{-5..5}     // between -5 and 5
+```
+
+### Unary Predicates
+
+Applied to single operands:
+
+```
+{!x}        // not x
+{not x}     // not x (keyword version)
+{-1}        // negative one (literal)
+```
+
+### Complex Predicates
+
+Named predicates (identifiers):
+
+```
+{sorted}            // is sorted
+{blank}             // is blank
+{custom_check}      // custom named predicate
+```
+
+## Limitations and Notes
+
+- Dependent types are currently parsed but not enforced at compile time
+- They serve as annotations for documentation and potential future runtime/compile-time checking
+- The parser supports the syntax but code generation currently ignores the predicates
+- Future versions may add compile-time verification or runtime assertions based on these predicates
+
+## Test Examples
+
+See `tests/test_dependent_types.zenith` for comprehensive examples.
+>>>>>>> f44d684 (Add initial implementation of Zenith parser and visitor classes)
