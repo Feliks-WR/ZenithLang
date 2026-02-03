@@ -1,9 +1,56 @@
 #include "TypeChecker.h"
+#include "ProofSolver.h"
 #include <sstream>
 
 using namespace mlir::customlang;
 
 TypeChecker::TypeChecker() {}
+
+namespace {
+bool constraintImpliesNonZero(const Constraint &constraint) {
+  if (constraint.kind == Constraint::Range) {
+    return (constraint.minValue > 0) || (constraint.maxValue < 0);
+  }
+
+  if (constraint.kind == Constraint::SingleValue) {
+    return constraint.expression != "0";
+  }
+
+  if (constraint.kind == Constraint::Predicate) {
+    const std::string &expr = constraint.expression;
+    if (expr.find("!= 0") != std::string::npos ||
+        expr.find("(!=0)") != std::string::npos ||
+        expr.find("it != 0") != std::string::npos) {
+      return true;
+    }
+    if (expr.find("it > 0") != std::string::npos ||
+        expr.find("it >= 1") != std::string::npos ||
+        expr.find("it < 0") != std::string::npos ||
+        expr.find("it <= -1") != std::string::npos) {
+      return true;
+    }
+    if (expr.find("(>0)") != std::string::npos ||
+        expr.find("(>=1)") != std::string::npos ||
+        expr.find("(<0)") != std::string::npos ||
+        expr.find("(<=-1)") != std::string::npos) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool typeImpliesNonZero(const std::shared_ptr<DependentType> &type) {
+  if (!type)
+    return false;
+  for (const auto &constraint : type->constraints) {
+    if (constraint && constraintImpliesNonZero(*constraint)) {
+      return true;
+    }
+  }
+  return false;
+}
+} // namespace
 
 void TypeChecker::checkArrayAccess(
     const std::shared_ptr<DependentType> &arrayType,
@@ -16,8 +63,9 @@ void TypeChecker::checkArrayAccess(
 
   // Create proof obligation: index must be within bounds
   ProofObligation obligation(ProofObligation::ArrayBounds, location,
-                              "Index " + indexExpr + " must be < " +
-                                  arrayType->arrayLengthParam);
+                             "Index " + indexExpr + " must be < " +
+                                 arrayType->arrayLengthParam,
+                             indexExpr, arrayType->arrayLengthParam);
   addObligation(obligation);
 }
 
@@ -55,21 +103,11 @@ void TypeChecker::checkDivision(
     return;
   }
 
-  // Check if divisor has non-zero constraint
-  bool hasNonZeroConstraint = false;
-  for (const auto &constraint : divisorType->constraints) {
-    if (constraint->kind == Constraint::Predicate &&
-        (constraint->expression.find("!= 0") != std::string::npos ||
-         constraint->expression.find("(!=0)") != std::string::npos)) {
-      hasNonZeroConstraint = true;
-      break;
-    }
-  }
-
-  if (!hasNonZeroConstraint) {
+  if (!typeImpliesNonZero(divisorType)) {
     addWarning("Division at " + location + " may fail: divisor could be zero");
     ProofObligation obligation(ProofObligation::DivisionNonZero, location,
-                                "Divisor " + divisorExpr + " must != 0");
+                               "Divisor " + divisorExpr + " must != 0",
+                               divisorExpr);
     obligation.required = Constraint::makePredicate("it != 0");
     addObligation(obligation);
   }
@@ -84,21 +122,11 @@ void TypeChecker::checkModulo(
     return;
   }
 
-  // Similar to division: check for non-zero constraint
-  bool hasNonZeroConstraint = false;
-  for (const auto &constraint : divisorType->constraints) {
-    if (constraint->kind == Constraint::Predicate &&
-        (constraint->expression.find("!= 0") != std::string::npos ||
-         constraint->expression.find("(!=0)") != std::string::npos)) {
-      hasNonZeroConstraint = true;
-      break;
-    }
-  }
-
-  if (!hasNonZeroConstraint) {
+  if (!typeImpliesNonZero(divisorType)) {
     addWarning("Modulo at " + location + " may fail: divisor could be zero");
     ProofObligation obligation(ProofObligation::ModuloNonZero, location,
-                                "Modulo divisor " + divisorExpr + " must != 0");
+                               "Modulo divisor " + divisorExpr + " must != 0",
+                               divisorExpr);
     obligation.required = Constraint::makePredicate("it != 0");
     addObligation(obligation);
   }
@@ -146,6 +174,24 @@ std::vector<ProofObligation> TypeChecker::getUnsatisfiedObligations() const {
 
 bool TypeChecker::allObligationsSatisfied() const {
   return getUnsatisfiedObligations().empty();
+}
+
+bool TypeChecker::requireProofs(
+    const ProofSolver &solver,
+    const std::unordered_map<std::string, std::optional<long>>
+        &constantValues) {
+  for (auto &obligation : obligations) {
+    if (obligation.satisfied)
+      continue;
+    auto result = solver.prove(obligation, typeEnv, constantValues);
+    obligation.satisfied = result.proved;
+    if (!result.proved) {
+      addError("Proof required at " + obligation.location + ": " +
+               obligation.description);
+    }
+  }
+
+  return allObligationsSatisfied();
 }
 
 bool TypeChecker::checkConstraint(

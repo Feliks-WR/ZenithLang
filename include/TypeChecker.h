@@ -2,12 +2,16 @@
 #define CUSTOMLANG_TYPECHECKER_H
 
 #include "Types.h"
-#include <string>
-#include <vector>
 #include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace mlir {
 namespace customlang {
+
+class ProofSolver;
 
 // Represents a proof obligation that must be satisfied
 struct ProofObligation {
@@ -23,11 +27,16 @@ struct ProofObligation {
   Kind kind;
   std::string location;  // source location (file:line)
   std::string description;
+  std::string subjectExpr; // expression being proved (e.g., divisor, index)
+  std::string boundExpr;   // optional bound (e.g., array length)
   std::shared_ptr<Constraint> required;
   bool satisfied;
 
-  ProofObligation(Kind k, const std::string &loc, const std::string &desc)
-      : kind(k), location(loc), description(desc), satisfied(false) {}
+  ProofObligation(Kind k, const std::string &loc, const std::string &desc,
+                  const std::string &subject = "",
+                  const std::string &bound = "")
+      : kind(k), location(loc), description(desc), subjectExpr(subject),
+        boundExpr(bound), satisfied(false) {}
 };
 
 // TypeChecker enforces compile-time type constraints and proof obligations
@@ -64,6 +73,11 @@ class TypeChecker {
   void addObligation(const ProofObligation &obligation);
   std::vector<ProofObligation> getUnsatisfiedObligations() const;
   bool allObligationsSatisfied() const;
+
+  // Solve proof obligations and emit errors for unsatisfied proofs
+  bool requireProofs(const ProofSolver &solver,
+                     const std::unordered_map<std::string, std::optional<long>>
+                         &constantValues);
 
   // Constraint satisfaction checking
   bool checkConstraint(const std::shared_ptr<Constraint> &constraint,

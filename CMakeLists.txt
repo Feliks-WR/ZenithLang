@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(ZenithLanguage)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -36,6 +36,9 @@ execute_process(
     COMMAND_ERROR_IS_FATAL ANY
 )
 
+message(STATUS "⚠ ANTLR4 generated files may need compatibility fixes.")
+message(STATUS "  If build fails, install compatible ANTLR4 or regenerate grammar files.")
+
 # Main compiler executable (no MLIR yet, just parsing)
 include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -52,9 +55,9 @@ set_source_files_properties(${ANTLR_GEN_SRC} PROPERTIES COMPILE_FLAGS "-Wno-erro
 
 add_executable(zenith
     src/main.cpp
-    src/CodeGenerator.cpp
     src/Types.cpp
     src/TypeChecker.cpp
+    src/ProofSolver.cpp
     ${ANTLR_GEN_SRC}
 )
 
@@ -135,6 +138,7 @@ if(GTest_FOUND)
         tests/test_dependent_types.cpp
         src/Types.cpp
         src/TypeChecker.cpp
+        src/ProofSolver.cpp
         ${ANTLR_GEN_SRC}
     )
     target_link_libraries(test_dependent_types

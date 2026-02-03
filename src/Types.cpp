@@ -18,6 +18,12 @@ std::shared_ptr<Constraint> Constraint::makeRange(long min, long max) {
   return constraint;
 }
 
+std::shared_ptr<Constraint> Constraint::makeSingleValue(long value) {
+  auto constraint = std::make_shared<Constraint>(SingleValue, "");
+  constraint->expression = std::to_string(value);
+  return constraint;
+}
+
 std::shared_ptr<Constraint> Constraint::makePredicate(
     const std::string &expr) {
   return std::make_shared<Constraint>(Predicate, expr);
@@ -217,15 +223,41 @@ bool DependentType::satisfiesConstraints(const std::string &value) const {
       } catch (...) {
         return false;
       }
+    } else if (constraint->kind == Constraint::SingleValue) {
+      if (constraint->expression != value) {
+        return false;
+      }
     } else if (constraint->kind == Constraint::Predicate) {
-      if (constraint->expression.find("!= 0") != std::string::npos ||
-          constraint->expression.find("(!=0)") != std::string::npos) {
-        try {
-          long val = std::stol(value);
+      try {
+        long val = std::stol(value);
+        const std::string &expr = constraint->expression;
+        if (expr.find("!= 0") != std::string::npos ||
+            expr.find("(!=0)") != std::string::npos ||
+            expr.find("it != 0") != std::string::npos) {
           if (val == 0) return false;
-        } catch (...) {
-          return false;
         }
+        if (expr.find("it > 0") != std::string::npos ||
+            expr.find("(>0)") != std::string::npos) {
+          if (val <= 0)
+            return false;
+        }
+        if (expr.find("it >= 1") != std::string::npos ||
+            expr.find("(>=1)") != std::string::npos) {
+          if (val < 1)
+            return false;
+        }
+        if (expr.find("it < 0") != std::string::npos ||
+            expr.find("(<0)") != std::string::npos) {
+          if (val >= 0)
+            return false;
+        }
+        if (expr.find("it <= -1") != std::string::npos ||
+            expr.find("(<=-1)") != std::string::npos) {
+          if (val > -1)
+            return false;
+        }
+      } catch (...) {
+        return false;
       }
     }
   }

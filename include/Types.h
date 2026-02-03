@@ -31,6 +31,7 @@ class Constraint {
   Constraint(ConstraintKind k, const std::string &expr);
   
   static std::shared_ptr<Constraint> makeRange(long min, long max);
+  static std::shared_ptr<Constraint> makeSingleValue(long value);
   static std::shared_ptr<Constraint> makePredicate(const std::string &expr);
   static std::shared_ptr<Constraint> makeNonNull();
   
