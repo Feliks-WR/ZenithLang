@@ -7,6 +7,7 @@ namespace mlir {
 namespace customlang {
 
 class CustomLangDialect : public Dialect {
+public:
   explicit CustomLangDialect(MLIRContext *context);
 
   void initialize();
