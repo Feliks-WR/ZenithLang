@@ -1,36 +1,35 @@
-#include "antlr4-runtime.h"
+#include "ProofSolver.h"
+#include "TypeChecker.h"
 #include "ZenithLexer.h"
 #include "ZenithParser.h"
 #include "ZenithParserBaseVisitor.h"
-// #include "CodeGenerator.h"   // Removed: C transpiler disabled
-#include "ProofSolver.h"
-#include "TypeChecker.h"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
-#include <filesystem>
+
+// ANTLR visitor
+#include "ZenithParserBaseVisitor.h"
 
 using namespace antlr4;
 using namespace mlir::customlang;
-namespace fs = std::filesystem;
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-      std::cerr << "Usage: zenith <file.zenith> [--check-proofs]\n";
-      std::cerr << "  --check-proofs: enable compile-time proof checking\n";
+      std::cerr << "Usage: zenith <file.zenith> [--no-check-proofs]\n";
+      std::cerr << "  --no-check-proofs: disable compile-time proof checking\n";
       return 1;
     }
 
     // Parse command line
     std::string inputFile = argv[1];
-    bool checkProofs = false;
+    bool checkProofs = true;
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--check-proofs") {
-          checkProofs = true;
+        if (arg == "--no-check-proofs") {
+          checkProofs = false;
         }
     }
 
@@ -67,8 +66,129 @@ int main(int argc, char **argv) {
       TypeChecker checker;
       ProofSolver solver;
 
-      // TODO: Walk AST and check division/modulo operations
-      // For now, just demonstrate the system works
+      // Walk AST: collect simple constant assignments and create obligations
+      // Visitor that inspects multiplicative expressions and array indexing
+      struct CheckerVisitor : public ZenithParserBaseVisitor {
+        TypeChecker &checker;
+        std::unordered_map<std::string, std::optional<long>> &constantValues;
+
+        CheckerVisitor(TypeChecker &c,
+                       std::unordered_map<std::string, std::optional<long>> &cv)
+            : checker(c), constantValues(cv) {}
+
+        antlrcpp::Any
+        visitEquation(ZenithParser::EquationContext *ctx) override {
+          // equation: expression EQUALS expression
+          auto left = ctx->expression(0)->getText();
+          auto right = ctx->expression(1)->getText();
+
+          // If left is an identifier and right is integer literal, record
+          // constant
+          if (!left.empty() &&
+              std::isalpha(static_cast<unsigned char>(left[0]))) {
+            try {
+              long v = std::stol(right);
+              constantValues[left] = v;
+              // register variable as int with single-value constraint
+              checker.declareVariable(
+                  left, mlir::customlang::DependentType::makeIntWithConstraint(
+                            mlir::customlang::Constraint::makeSingleValue(v)));
+              checker.assignVariable(left, right);
+            } catch (...) {
+              // not an integer literal
+            }
+          }
+
+          return visitChildren(ctx);
+        }
+
+        antlrcpp::Any visitMultiplicativeExpr(
+            ZenithParser::MultiplicativeExprContext *ctx) override {
+          // Look for DIV or MOD operators in the text and create obligations
+          std::string txt = ctx->getText();
+          // Quick scan: find '/' or '%' occurrences
+          for (size_t i = 0; i < txt.size(); ++i) {
+            if (txt[i] == '/' || txt[i] == '%') {
+              // Extract right-hand operand (divisor) by scanning rest of string
+              size_t j = i + 1;
+              while (j < txt.size() && txt[j] == ' ')
+                ++j;
+              size_t start = j;
+              // read until next operator (+-*/% ) or end
+              while (j < txt.size() && txt[j] != '/' && txt[j] != '%' &&
+                     txt[j] != '+' && txt[j] != '-')
+                ++j;
+              std::string divisor = txt.substr(start, j - start);
+
+              // determine location placeholder
+              std::string loc = "(source)";
+
+              auto dtype = checker.getVariableType(divisor);
+              if (!dtype) {
+                // create a generic int type for unknown
+                checker.declareVariable(
+                    divisor, mlir::customlang::DependentType::makeInt());
+                dtype = checker.getVariableType(divisor);
+              }
+
+              if (txt[i] == '/') {
+                checker.checkDivision(dtype, divisor, loc);
+              } else {
+                checker.checkModulo(dtype, divisor, loc);
+              }
+            }
+          }
+
+          return visitChildren(ctx);
+        }
+
+        antlrcpp::Any
+        visitCallSuffix(ZenithParser::CallSuffixContext *ctx) override {
+          // callSuffix could be array indexing: LBRACKET expression RBRACKET
+          if (ctx->LBRACKET()) {
+            // parent text contains array name and index; attempt to locate
+            // index and array
+            std::string txt = ctx->getText();
+            // format is [index]; the parent callExpr will have the identifier
+            // For simplicity, find the index expression inside brackets
+            std::string inner = txt.substr(1, txt.size() - 2);
+            // try to find array name via parent
+            auto parent = ctx->parent;
+            std::string arrName = "";
+            if (parent) {
+              arrName = parent->getText();
+              // strip suffix from identifier if present
+              size_t pos = arrName.find('[');
+              if (pos != std::string::npos)
+                arrName = arrName.substr(0, pos);
+            }
+
+            std::string loc = "(source)";
+
+            auto arrType = checker.getVariableType(arrName);
+            if (!arrType) {
+              // assume array with unknown length; cannot prove bounds
+              // still add an obligation using inner as subject and unknown
+              // bound
+              mlir::customlang::ProofObligation obl(
+                  mlir::customlang::ProofObligation::ArrayBounds, loc,
+                  "Index " + inner + " must be within bounds", inner, "?");
+              checker.addObligation(obl);
+            } else {
+              checker.checkArrayAccess(arrType, inner, loc);
+            }
+          }
+
+          return visitChildren(ctx);
+        }
+      };
+
+      std::unordered_map<std::string, std::optional<long>> constantValues;
+      CheckerVisitor visitor(checker, constantValues);
+
+      // Walk the parse tree
+      visitor.visitProgram(tree);
+
       std::cout << "✓ Proof checking enabled\n";
 
       if (checker.hasErrors()) {

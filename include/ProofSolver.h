@@ -7,6 +7,10 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef USE_Z3
+#include <z3++.h>
+#endif
+
 namespace mlir {
 namespace customlang {
 
@@ -59,6 +63,14 @@ private:
   bool checkBoundsFromType(const std::string &indexExpr,
                            const std::string &boundExpr,
                            const TypeEnv &typeEnv) const;
+
+#ifdef USE_Z3
+  // Try to prove using Z3 SMT solver
+  ProofResult
+  proveWithZ3(const ProofObligation &obligation, const TypeEnv &typeEnv,
+              const std::unordered_map<std::string, std::optional<long>>
+                  &constantValues) const;
+#endif
 };
 
 } // namespace customlang

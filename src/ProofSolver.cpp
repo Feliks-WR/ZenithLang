@@ -4,6 +4,10 @@
 #include <cctype>
 #include <sstream>
 
+#ifdef USE_Z3
+#include <z3++.h>
+#endif
+
 using namespace mlir::customlang;
 
 ProofSolver::ProofSolver() {}
@@ -24,6 +28,14 @@ ProofSolver::prove(const ProofObligation &obligation, const TypeEnv &typeEnv,
   if (typeResult.proved) {
     return typeResult;
   }
+
+#ifdef USE_Z3
+  // Try Z3 SMT solver
+  auto z3Result = proveWithZ3(obligation, typeEnv, constantValues);
+  if (z3Result.proved) {
+    return z3Result;
+  }
+#endif
 
   // Failed to prove
   return ProofResult(false, "Unable to discharge proof obligation");
@@ -175,3 +187,115 @@ bool ProofSolver::checkBoundsFromType(const std::string &indexExpr,
 
   return false;
 }
+
+#ifdef USE_Z3
+ProofResult ProofSolver::proveWithZ3(
+    const ProofObligation &obligation, const TypeEnv &typeEnv,
+    const std::unordered_map<std::string, std::optional<long>> &constantValues)
+    const {
+
+  try {
+    z3::context ctx;
+    z3::solver solver(ctx);
+
+    // Create Z3 variables for all symbols
+    std::unordered_map<std::string, z3::expr> z3Vars;
+
+    // Helper to get or create Z3 variable
+    auto getZ3Var = [&](const std::string &name) -> z3::expr {
+      auto it = z3Vars.find(name);
+      if (it != z3Vars.end()) {
+        return it->second;
+      }
+
+      // Check if this is a constant value
+      auto constVal = tryEvaluateConstant(name, constantValues);
+      if (constVal.has_value()) {
+        return ctx.int_val(static_cast<int>(constVal.value()));
+      }
+
+      // Create new integer variable
+      auto [insertedIt, inserted] =
+          z3Vars.emplace(name, ctx.int_const(name.c_str()));
+      z3::expr &var = insertedIt->second;
+
+      // Add type constraints if available
+      auto type = typeEnv.getType(name);
+      if (type) {
+        for (const auto &constraint : type->constraints) {
+          if (constraint->kind == Constraint::Range) {
+            solver.add(var >= static_cast<int>(constraint->minValue));
+            solver.add(var <= static_cast<int>(constraint->maxValue));
+          } else if (constraint->kind == Constraint::Predicate) {
+            // Parse simple predicates
+            const std::string &pred = constraint->expression;
+            if (pred.find("!= 0") != std::string::npos) {
+              solver.add(var != 0);
+            } else if (pred.find("> 0") != std::string::npos) {
+              solver.add(var > 0);
+            } else if (pred.find(">= 0") != std::string::npos) {
+              solver.add(var >= 0);
+            } else if (pred.find("< 0") != std::string::npos) {
+              solver.add(var < 0);
+            }
+          }
+        }
+      }
+
+      return var;
+    };
+
+    // Build the proof obligation as a Z3 constraint
+    switch (obligation.kind) {
+    case ProofObligation::DivisionNonZero:
+    case ProofObligation::ModuloNonZero: {
+      z3::expr divisor = getZ3Var(obligation.subjectExpr);
+
+      // Check if divisor == 0 is UNSAT (meaning divisor != 0 is always true)
+      solver.push();
+      solver.add(divisor == 0);
+
+      if (solver.check() == z3::unsat) {
+        return ProofResult(true, "Z3 proved divisor is always non-zero");
+      }
+      solver.pop();
+      break;
+    }
+
+    case ProofObligation::ArrayBounds: {
+      z3::expr index = getZ3Var(obligation.subjectExpr);
+
+      // Try to parse bound as integer or get variable
+      long boundValue = 0;
+      bool hasBound = false;
+      try {
+        boundValue = std::stol(obligation.boundExpr);
+        hasBound = true;
+      } catch (...) {
+        // Bound might be a variable
+      }
+
+      if (hasBound) {
+        // Check if (index < 0 || index >= bound) is UNSAT
+        solver.push();
+        solver.add(index < 0 || index >= static_cast<int>(boundValue));
+
+        if (solver.check() == z3::unsat) {
+          return ProofResult(true, "Z3 proved index is always within bounds");
+        }
+        solver.pop();
+      }
+      break;
+    }
+
+    default:
+      break;
+    }
+
+  } catch (const z3::exception &e) {
+    return ProofResult(false, std::string("Z3 exception: ") + e.msg());
+  }
+
+  return ProofResult(false, "Z3 could not prove the obligation");
+}
+#endif
