@@ -17,9 +17,9 @@ using namespace mlir::customlang;
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-      std::cerr << "Usage: zenith <file.zenith> [--no-check-proofs]\n";
-      std::cerr << "  --no-check-proofs: disable compile-time proof checking\n";
-      return 1;
+        std::cerr << "Usage: zenith <file.zenith> [--no-check-proofs]\n";
+        std::cerr << "  --no-check-proofs: disable compile-time proof checking\n";
+        return 1;
     }
 
     // Parse command line
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--no-check-proofs") {
-          checkProofs = false;
+            checkProofs = false;
         }
     }
 
