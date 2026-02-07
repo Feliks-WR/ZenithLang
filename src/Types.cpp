@@ -1,5 +1,6 @@
 #include "Types.h"
 #include <sstream>
+#include <utility>
 
 using namespace mlir::customlang;
 
@@ -7,10 +8,11 @@ using namespace mlir::customlang;
 // Constraint Implementation
 // ============================================================================
 
-Constraint::Constraint(ConstraintKind k, const std::string &expr)
-    : kind(k), expression(expr), minValue(0), maxValue(0) {}
+Constraint::Constraint(const ConstraintKind k, std::string expr)
+    : kind(k), expression(std::move(expr)), minValue(0), maxValue(0) {}
 
-std::shared_ptr<Constraint> Constraint::makeRange(long min, long max) {
+std::shared_ptr<Constraint> Constraint::make_range(const long min,
+                                                   const long max) {
   auto constraint = std::make_shared<Constraint>(Range, "");
   constraint->minValue = min;
   constraint->maxValue = max;
@@ -18,51 +20,45 @@ std::shared_ptr<Constraint> Constraint::makeRange(long min, long max) {
   return constraint;
 }
 
-std::shared_ptr<Constraint> Constraint::makeSingleValue(long value) {
+std::shared_ptr<Constraint> Constraint::make_single_value(const long value) {
   auto constraint = std::make_shared<Constraint>(SingleValue, "");
   constraint->expression = std::to_string(value);
   return constraint;
 }
 
-std::shared_ptr<Constraint> Constraint::makePredicate(
-    const std::string &expr) {
+std::shared_ptr<Constraint> Constraint::makePredicate(const std::string &expr) {
   return std::make_shared<Constraint>(Predicate, expr);
 }
 
-std::shared_ptr<Constraint> Constraint::makeNonNull() {
+std::shared_ptr<Constraint> Constraint::make_non_null() {
   return std::make_shared<Constraint>(NonNull, "nonnull");
 }
 
 std::string Constraint::toString() const {
   switch (kind) {
-    case Range:
-      return "{" + expression + "}";
-    case SingleValue:
-      return "{" + expression + "}";
-    case Predicate:
-      return "{" + expression + "}";
-    case NonNull:
-      return "{nonnull}";
-    case Custom:
-      return "{" + expression + "}";
-    default:
-      return "{}";
+  case Range:
+  case SingleValue:
+  case Predicate:
+    return "{" + expression + "}";
+  case NonNull:
+    return "{nonnull}";
+  case Custom:
+    return "{" + expression + "}";
+  default:
+    return "{}";
   }
 }
 
-bool Constraint::isValid() const {
-  return !expression.empty();
-}
+bool Constraint::is_valid() const { return !expression.empty(); }
 
 // ============================================================================
 // DependentType Implementation
 // ============================================================================
 
-DependentType::DependentType()
-    : kind(Named), baseName("unknown") {}
+DependentType::DependentType() : kind(Named), baseName("unknown") {}
 
-DependentType::DependentType(TypeKind k, const std::string &name)
-    : kind(k), baseName(name) {}
+DependentType::DependentType(TypeKind k, std::string name)
+    : kind(k), baseName(std::move(name)) {}
 
 std::shared_ptr<DependentType> DependentType::makeInt() {
   return std::make_shared<DependentType>(Int, "int");
@@ -75,26 +71,26 @@ std::shared_ptr<DependentType> DependentType::makeIntWithConstraint(
   return type;
 }
 
-std::shared_ptr<DependentType> DependentType::makePointer(
-    const std::shared_ptr<DependentType> &elemType) {
+std::shared_ptr<DependentType>
+DependentType::makePointer(const std::shared_ptr<DependentType> &elemType) {
   auto type = std::make_shared<DependentType>(Pointer, "ptr");
   type->elementType = elemType;
   return type;
 }
 
-std::shared_ptr<DependentType> DependentType::makeArray(
-    const std::shared_ptr<DependentType> &elemType,
-    const std::string &lengthParam) {
+std::shared_ptr<DependentType>
+DependentType::makeArray(const std::shared_ptr<DependentType> &elem_type,
+                         const std::string &length_param) {
   auto type = std::make_shared<DependentType>(Array, "array");
-  type->arrayElementType = elemType;
-  type->arrayLengthParam = lengthParam;
+  type->arrayElementType = elem_type;
+  type->arrayLengthParam = length_param;
   return type;
 }
 
-std::shared_ptr<DependentType> DependentType::makeSet(
-    const std::shared_ptr<DependentType> &elemType) {
+std::shared_ptr<DependentType>
+DependentType::make_set(const std::shared_ptr<DependentType> &elem_type) {
   auto type = std::make_shared<DependentType>(Set, "set");
-  type->setElementType = elemType;
+  type->setElementType = elem_type;
   return type;
 }
 
@@ -106,14 +102,12 @@ std::shared_ptr<DependentType> DependentType::makeBool() {
   return std::make_shared<DependentType>(Bool, "bool");
 }
 
-std::shared_ptr<DependentType> DependentType::makeNamed(
-    const std::string &name) {
+std::shared_ptr<DependentType>
+DependentType::makeNamed(const std::string &name) {
   return std::make_shared<DependentType>(Named, name);
 }
 
-bool DependentType::requiresProof() const {
-  return !constraints.empty();
-}
+bool DependentType::requiresProof() const { return !constraints.empty(); }
 
 std::vector<std::string> DependentType::getProofObligations() const {
   std::vector<std::string> proofs;
@@ -125,65 +119,67 @@ std::vector<std::string> DependentType::getProofObligations() const {
 
 std::string DependentType::toString() const {
   std::stringstream ss;
-  
+
   switch (kind) {
-    case Int:
-      ss << "int";
-      break;
-    case Float:
-      ss << "float";
-      break;
-    case Bool:
-      ss << "bool";
-      break;
-    case Pointer:
-      ss << "*";
-      if (elementType) {
-        ss << elementType->toString();
-      }
-      break;
-    case Array:
-      ss << "[" << (arrayElementType ? arrayElementType->toString() : "?");
-      ss << "; " << arrayLengthParam << "]";
-      break;
-    case Set:
-      ss << "{";
-      if (setElementType) {
-        ss << setElementType->toString();
-      }
-      ss << "}";
-      break;
-    case Function:
-      ss << "(";
-      for (size_t i = 0; i < paramTypes.size(); ++i) {
-        if (i > 0) ss << ", ";
-        ss << paramTypes[i]->toString();
-      }
-      ss << ") -> ";
-      ss << (returnType ? returnType->toString() : "void");
-      break;
-    case Named:
-      ss << baseName;
-      break;
+  case Int:
+    ss << "int";
+    break;
+  case Float:
+    ss << "float";
+    break;
+  case Bool:
+    ss << "bool";
+    break;
+  case Pointer:
+    ss << "*";
+    if (elementType) {
+      ss << elementType->toString();
+    }
+    break;
+  case Array:
+    ss << "[" << (arrayElementType ? arrayElementType->toString() : "?");
+    ss << "; " << arrayLengthParam << "]";
+    break;
+  case Set:
+    ss << "{";
+    if (setElementType) {
+      ss << setElementType->toString();
+    }
+    ss << "}";
+    break;
+  case Function:
+    ss << "(";
+    for (size_t i = 0; i < paramTypes.size(); ++i) {
+      if (i > 0)
+        ss << ", ";
+      ss << paramTypes[i]->toString();
+    }
+    ss << ") -> ";
+    ss << (returnType ? returnType->toString() : "void");
+    break;
+  case Named:
+    ss << baseName;
+    break;
   }
-  
+
   // Append constraints
   for (const auto &constraint : constraints) {
     ss << constraint->toString();
   }
-  
+
   return ss.str();
 }
 
 bool DependentType::isCompatibleWith(
     const std::shared_ptr<DependentType> &other) const {
-  if (!other) return false;
-  
+  if (!other)
+    return false;
+
   // Base type must match
   if (kind != other->kind || baseName != other->baseName) {
     return false;
   }
-  
+
   // For pointers, element types must be compatible
   if (kind == Pointer) {
     if (!elementType || !other->elementType) {
@@ -191,7 +187,7 @@ bool DependentType::isCompatibleWith(
     }
     return elementType->isCompatibleWith(other->elementType);
   }
-  
+
   // For arrays, element types and length must match
   if (kind == Array) {
     if (!arrayElementType || !other->arrayElementType) {
@@ -200,7 +196,7 @@ bool DependentType::isCompatibleWith(
     return arrayElementType->isCompatibleWith(other->arrayElementType) &&
            arrayLengthParam == other->arrayLengthParam;
   }
-  
+
   // For sets, element types must be compatible
   if (kind == Set) {
     if (!setElementType || !other->setElementType) {
@@ -208,7 +204,7 @@ bool DependentType::isCompatibleWith(
     }
     return setElementType->isCompatibleWith(other->setElementType);
   }
-  
+
   return true;
 }
 
@@ -234,7 +230,8 @@ bool DependentType::satisfiesConstraints(const std::string &value) const {
         if (expr.find("!= 0") != std::string::npos ||
             expr.find("(!=0)") != std::string::npos ||
             expr.find("it != 0") != std::string::npos) {
-          if (val == 0) return false;
+          if (val == 0)
+            return false;
         }
         if (expr.find("it > 0") != std::string::npos ||
             expr.find("(>0)") != std::string::npos) {
@@ -286,8 +283,8 @@ void TypeEnv::addProofObligation(const std::string &location,
   proofObligations[location].push_back(proof);
 }
 
-std::vector<std::shared_ptr<Constraint>> TypeEnv::getProofs(
-    const std::string &location) const {
+std::vector<std::shared_ptr<Constraint>>
+TypeEnv::getProofs(const std::string &location) const {
   auto it = proofObligations.find(location);
   if (it != proofObligations.end()) {
     return it->second;

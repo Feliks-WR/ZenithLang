@@ -4,35 +4,35 @@
 
 using namespace mlir::customlang;
 
-TypeChecker::TypeChecker() {}
+TypeChecker::TypeChecker() = default;
 
 namespace {
-bool constraintImpliesNonZero(const Constraint &constraint) {
-  if (constraint.kind == Constraint::Range) {
-    return (constraint.minValue > 0) || (constraint.maxValue < 0);
+bool constraintImpliesNonZero(const Constraint &TheConstraint) {
+  if (TheConstraint.kind == Constraint::Range) {
+    return (TheConstraint.minValue > 0) || (TheConstraint.maxValue < 0);
   }
 
-  if (constraint.kind == Constraint::SingleValue) {
-    return constraint.expression != "0";
+  if (TheConstraint.kind == Constraint::SingleValue) {
+    return TheConstraint.expression != "0";
   }
 
-  if (constraint.kind == Constraint::Predicate) {
-    const std::string &expr = constraint.expression;
-    if (expr.find("!= 0") != std::string::npos ||
-        expr.find("(!=0)") != std::string::npos ||
-        expr.find("it != 0") != std::string::npos) {
+  if (TheConstraint.kind == Constraint::Predicate) {
+    const std::string &Expr = TheConstraint.expression;
+    if (Expr.find("!= 0") != std::string::npos ||
+        Expr.find("(!=0)") != std::string::npos ||
+        Expr.find("it != 0") != std::string::npos) {
       return true;
     }
-    if (expr.find("it > 0") != std::string::npos ||
-        expr.find("it >= 1") != std::string::npos ||
-        expr.find("it < 0") != std::string::npos ||
-        expr.find("it <= -1") != std::string::npos) {
+    if (Expr.find("it > 0") != std::string::npos ||
+        Expr.find("it >= 1") != std::string::npos ||
+        Expr.find("it < 0") != std::string::npos ||
+        Expr.find("it <= -1") != std::string::npos) {
       return true;
     }
-    if (expr.find("(>0)") != std::string::npos ||
-        expr.find("(>=1)") != std::string::npos ||
-        expr.find("(<0)") != std::string::npos ||
-        expr.find("(<=-1)") != std::string::npos) {
+    if (Expr.find("(>0)") != std::string::npos ||
+        Expr.find("(>=1)") != std::string::npos ||
+        Expr.find("(<0)") != std::string::npos ||
+        Expr.find("(<=-1)") != std::string::npos) {
       return true;
     }
   }
@@ -54,8 +54,7 @@ bool typeImpliesNonZero(const std::shared_ptr<DependentType> &type) {
 
 void TypeChecker::checkArrayAccess(
     const std::shared_ptr<DependentType> &arrayType,
-    const std::string &indexExpr,
-    const std::string &location) {
+    const std::string &indexExpr, const std::string &location) {
   if (!arrayType || arrayType->kind != DependentType::Array) {
     addError("Type error at " + location + ": array access on non-array type");
     return;
@@ -87,17 +86,17 @@ void TypeChecker::checkPointerDereference(
   }
 
   if (!hasNonNullConstraint) {
-    addWarning("Dereference at " + location + " may fail: pointer could be null");
+    addWarning("Dereference at " + location +
+               " may fail: pointer could be null");
     ProofObligation obligation(ProofObligation::PointerDeref, location,
-                                "Pointer must be non-null");
+                               "Pointer must be non-null");
     addObligation(obligation);
   }
 }
 
 void TypeChecker::checkDivision(
     const std::shared_ptr<DependentType> &divisorType,
-    const std::string &divisorExpr,
-    const std::string &location) {
+    const std::string &divisorExpr, const std::string &location) {
   if (!divisorType) {
     addError("Type error at " + location + ": unknown divisor type");
     return;
@@ -113,10 +112,9 @@ void TypeChecker::checkDivision(
   }
 }
 
-void TypeChecker::checkModulo(
-    const std::shared_ptr<DependentType> &divisorType,
-    const std::string &divisorExpr,
-    const std::string &location) {
+void TypeChecker::checkModulo(const std::shared_ptr<DependentType> &divisorType,
+                              const std::string &divisorExpr,
+                              const std::string &location) {
   if (!divisorType) {
     addError("Type error at " + location + ": unknown modulo divisor type");
     return;
@@ -132,9 +130,8 @@ void TypeChecker::checkModulo(
   }
 }
 
-void TypeChecker::declareVariable(
-    const std::string &name,
-    const std::shared_ptr<DependentType> &type) {
+void TypeChecker::declareVariable(const std::string &name,
+                                  const std::shared_ptr<DependentType> &type) {
   typeEnv.addType(name, type);
 }
 
@@ -153,8 +150,8 @@ void TypeChecker::assignVariable(const std::string &name,
   }
 }
 
-std::shared_ptr<DependentType> TypeChecker::getVariableType(
-    const std::string &name) const {
+std::shared_ptr<DependentType>
+TypeChecker::getVariableType(const std::string &name) const {
   return typeEnv.getType(name);
 }
 
@@ -194,11 +191,11 @@ bool TypeChecker::requireProofs(
   return allObligationsSatisfied();
 }
 
-bool TypeChecker::checkConstraint(
-    const std::shared_ptr<Constraint> &constraint,
-    const std::string &value) const {
-  if (!constraint) return false;
-  return constraint->isValid();  // Can be extended with actual checking
+bool TypeChecker::checkConstraint(const std::shared_ptr<Constraint> &constraint,
+                                  const std::string &value) const {
+  if (!constraint)
+    return false;
+  return constraint->is_valid(); // Can be extended with actual checking
 }
 
 void TypeChecker::addError(const std::string &message) {

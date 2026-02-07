@@ -13,11 +13,11 @@ namespace customlang {
 // Forward declarations
 class CustomLangDialect;
 
-}  // namespace customlang
-}  // namespace mlir
+} // namespace customlang
+} // namespace mlir
 
 // Include custom op definitions
 #define GET_OP_CLASSES
 #include "CustomLang.h.inc"
 
-#endif  // CUSTOMLANG_OPS_H
+#endif // CUSTOMLANG_OPS_H

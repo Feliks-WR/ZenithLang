@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-#include "Types.h"
 #include "TypeChecker.h"
+#include "Types.h"
+#include <gtest/gtest.h>
 #include <memory>
 
 using namespace mlir::customlang;
@@ -88,7 +88,7 @@ TEST(DependentTypeTests, TypeCompatibility) {
 TEST(DependentTypeTests, ConstraintSatisfaction) {
   auto nonZeroConstraint = Constraint::makePredicate("it != 0");
   auto intType = DependentType::makeIntWithConstraint(nonZeroConstraint);
-  
+
   EXPECT_TRUE(intType->satisfiesConstraints("5"));
   EXPECT_TRUE(intType->satisfiesConstraints("-1"));
   EXPECT_FALSE(intType->satisfiesConstraints("0"));
@@ -97,7 +97,7 @@ TEST(DependentTypeTests, ConstraintSatisfaction) {
 TEST(DependentTypeTests, RangeConstraintSatisfaction) {
   auto rangeConstraint = Constraint::makeRange(1, 10);
   auto intType = DependentType::makeIntWithConstraint(rangeConstraint);
-  
+
   EXPECT_TRUE(intType->satisfiesConstraints("1"));
   EXPECT_TRUE(intType->satisfiesConstraints("5"));
   EXPECT_TRUE(intType->satisfiesConstraints("10"));
@@ -109,10 +109,10 @@ TEST(DependentTypeTests, RangeConstraintSatisfaction) {
 TEST(TypeEnvTests, AddAndGetType) {
   TypeEnv env;
   auto intType = DependentType::makeInt();
-  
+
   env.addType("x", intType);
   EXPECT_TRUE(env.hasType("x"));
-  
+
   auto retrieved = env.getType("x");
   EXPECT_TRUE(retrieved->isCompatibleWith(intType));
 }
@@ -120,9 +120,9 @@ TEST(TypeEnvTests, AddAndGetType) {
 TEST(TypeEnvTests, ProofObligations) {
   TypeEnv env;
   auto constraint = Constraint::makePredicate("it != 0");
-  
+
   env.addProofObligation("line_5", constraint);
-  
+
   auto proofs = env.getProofs("line_5");
   EXPECT_EQ(proofs.size(), 1);
   EXPECT_EQ(proofs[0]->expression, "it != 0");
@@ -132,9 +132,9 @@ TEST(TypeEnvTests, ProofObligations) {
 TEST(TypeCheckerTests, DeclareVariable) {
   TypeChecker checker;
   auto intType = DependentType::makeInt();
-  
+
   checker.declareVariable("x", intType);
-  
+
   auto retrieved = checker.getVariableType("x");
   EXPECT_TRUE(retrieved->isCompatibleWith(intType));
 }
@@ -143,10 +143,10 @@ TEST(TypeCheckerTests, AssignValidValue) {
   TypeChecker checker;
   auto nonZeroConstraint = Constraint::makePredicate("it != 0");
   auto intType = DependentType::makeIntWithConstraint(nonZeroConstraint);
-  
+
   checker.declareVariable("x", intType);
   checker.assignVariable("x", "5");
-  
+
   EXPECT_FALSE(checker.hasErrors());
 }
 
@@ -154,10 +154,10 @@ TEST(TypeCheckerTests, AssignInvalidValue) {
   TypeChecker checker;
   auto nonZeroConstraint = Constraint::makePredicate("it != 0");
   auto intType = DependentType::makeIntWithConstraint(nonZeroConstraint);
-  
+
   checker.declareVariable("x", intType);
   checker.assignVariable("x", "0");
-  
+
   EXPECT_TRUE(checker.hasErrors());
 }
 
@@ -165,10 +165,10 @@ TEST(TypeCheckerTests, ArrayAccess) {
   TypeChecker checker;
   auto intType = DependentType::makeInt();
   auto arrayType = DependentType::makeArray(intType, "10");
-  
+
   checker.declareVariable("arr", arrayType);
   checker.checkArrayAccess(arrayType, "0", "line_10");
-  
+
   auto unsatisfied = checker.getUnsatisfiedObligations();
   EXPECT_EQ(unsatisfied.size(), 1);
   EXPECT_EQ(unsatisfied[0].kind, ProofObligation::ArrayBounds);
@@ -177,10 +177,10 @@ TEST(TypeCheckerTests, ArrayAccess) {
 TEST(TypeCheckerTests, DivisionByZero) {
   TypeChecker checker;
   auto intType = DependentType::makeInt();
-  
+
   checker.declareVariable("x", intType);
   checker.checkDivision(intType, "y", "line_15");
-  
+
   auto unsatisfied = checker.getUnsatisfiedObligations();
   EXPECT_EQ(unsatisfied.size(), 1);
   EXPECT_EQ(unsatisfied[0].kind, ProofObligation::DivisionNonZero);
@@ -190,10 +190,10 @@ TEST(TypeCheckerTests, DivisionWithNonZeroConstraint) {
   TypeChecker checker;
   auto nonZeroConstraint = Constraint::makePredicate("(!=0)");
   auto intType = DependentType::makeIntWithConstraint(nonZeroConstraint);
-  
+
   checker.declareVariable("x", intType);
   checker.checkDivision(intType, "x", "line_20");
-  
+
   auto unsatisfied = checker.getUnsatisfiedObligations();
   EXPECT_EQ(unsatisfied.size(), 0);
 }
@@ -202,9 +202,9 @@ TEST(TypeCheckerTests, PointerDereference) {
   TypeChecker checker;
   auto intType = DependentType::makeInt();
   auto ptrType = DependentType::makePointer(intType);
-  
+
   checker.checkPointerDereference(ptrType, "line_25");
-  
+
   auto unsatisfied = checker.getUnsatisfiedObligations();
   EXPECT_EQ(unsatisfied.size(), 1);
   EXPECT_EQ(unsatisfied[0].kind, ProofObligation::PointerDeref);
@@ -215,9 +215,9 @@ TEST(TypeCheckerTests, NonNullPointerDereference) {
   auto intType = DependentType::makeInt();
   auto ptrType = DependentType::makePointer(intType);
   ptrType->constraints.push_back(Constraint::makeNonNull());
-  
+
   checker.checkPointerDereference(ptrType, "line_30");
-  
+
   auto unsatisfied = checker.getUnsatisfiedObligations();
   EXPECT_EQ(unsatisfied.size(), 0);
 }
@@ -225,10 +225,10 @@ TEST(TypeCheckerTests, NonNullPointerDereference) {
 TEST(TypeCheckerTests, ClearEnvironment) {
   TypeChecker checker;
   auto intType = DependentType::makeInt();
-  
+
   checker.declareVariable("x", intType);
   EXPECT_TRUE(checker.getTypeEnv().hasType("x"));
-  
+
   checker.clear();
   EXPECT_FALSE(checker.getTypeEnv().hasType("x"));
 }

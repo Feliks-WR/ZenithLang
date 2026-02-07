@@ -42,11 +42,11 @@ void PrintUsage(const char *argv0) {
 }
 
 bool ReadFileToString(const std::string &path, std::string *out,
-                      std::string *error) {
+                      std::string *Error) {
   std::ifstream file(path, std::ios::in | std::ios::binary);
   if (!file) {
-    if (error) {
-      *error = "error: cannot open file '" + path + "'";
+    if (Error) {
+      *Error = "error: cannot open file '" + path + "'";
     }
     return false;
   }
@@ -57,8 +57,8 @@ bool ReadFileToString(const std::string &path, std::string *out,
   return true;
 }
 
-std::string DefaultOutputPath(const std::string &input_path) {
-  std::string output = input_path;
+std::string defaultOutputPath(const std::string &InputPath) {
+  std::string output = InputPath;
   std::string::size_type last_slash = output.find_last_of("/\\");
   std::string::size_type last_dot = output.find_last_of('.');
 
@@ -72,7 +72,7 @@ std::string DefaultOutputPath(const std::string &input_path) {
   return output;
 }
 
-bool ParseArgs(int argc, char **argv, Options *options, std::string *error) {
+bool parse_args(int argc, char **argv, Options *options, std::string *error) {
   if (argc < 2) {
     if (error) {
       *error = "error: missing input file";
@@ -105,7 +105,7 @@ bool ParseArgs(int argc, char **argv, Options *options, std::string *error) {
   }
 
   if (options->output_path.empty()) {
-    options->output_path = DefaultOutputPath(options->input_path);
+    options->output_path = defaultOutputPath(options->input_path);
   }
 
   return true;
@@ -145,7 +145,7 @@ std::optional<long> ParseIntegerLiteral(const std::string &text) {
   return value;
 }
 
-class CheckerVisitor : public ZenithParserBaseVisitor {
+class CheckerVisitor final : public ZenithParserBaseVisitor {
 public:
   CheckerVisitor(
       mlir::customlang::TypeChecker &checker,
@@ -161,9 +161,9 @@ public:
       if (value.has_value()) {
         constant_values_[left] = value.value();
         checker_.declareVariable(
-            left,
-            mlir::customlang::DependentType::makeIntWithConstraint(
-                mlir::customlang::Constraint::makeSingleValue(value.value())));
+            left, mlir::customlang::DependentType::makeIntWithConstraint(
+                      mlir::customlang::Constraint::make_single_value(
+                          value.value())));
         checker_.assignVariable(left, right);
       }
     }
@@ -197,7 +197,7 @@ public:
         auto literal = ParseIntegerLiteral(divisor);
         if (literal.has_value()) {
           dtype = mlir::customlang::DependentType::makeIntWithConstraint(
-              mlir::customlang::Constraint::makeSingleValue(literal.value()));
+              mlir::customlang::Constraint::make_single_value(literal.value()));
         } else {
           checker_.declareVariable(divisor,
                                    mlir::customlang::DependentType::makeInt());
@@ -256,7 +256,7 @@ private:
 int main(int argc, char **argv) {
   Options options;
   std::string error;
-  if (!ParseArgs(argc, argv, &options, &error)) {
+  if (!parse_args(argc, argv, &options, &error)) {
     if (!error.empty()) {
       std::cerr << error << "\n";
     }

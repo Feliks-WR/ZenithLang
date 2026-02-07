@@ -14,10 +14,10 @@ public:
   static StringRef getDialectNamespace() { return "customlang"; }
 };
 
-}  // namespace customlang
-}  // namespace mlir
+} // namespace customlang
+} // namespace mlir
 
 // Include generated dialect class
 // #include "CustomLangDialect.h.inc"
 
-#endif  // CUSTOMLANG_DIALECT_H
+#endif // CUSTOMLANG_DIALECT_H

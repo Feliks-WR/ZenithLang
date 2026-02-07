@@ -10,7 +10,7 @@
 
 using namespace mlir::customlang;
 
-ProofSolver::ProofSolver() {}
+ProofSolver::ProofSolver() = default;
 
 ProofResult
 ProofSolver::prove(const ProofObligation &obligation, const TypeEnv &typeEnv,

@@ -1,8 +1,8 @@
 #include "ASTBuilder.h"
 #ifdef USE_MLIR
-#include "mlir/IR/Builders.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/Builders.h"
 #endif
 
 using namespace mlir::customlang;
@@ -26,7 +26,8 @@ std::any ASTBuilder::visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) {
   auto i32Type = builder.getI32Type();
   auto funcType = builder.getFunctionType({}, {i32Type});
   std::string name = ctx->IDENTIFIER()->getText();
-  auto func = mlir::func::FuncOp::create(builder.getUnknownLoc(), name, funcType);
+  auto func =
+      mlir::func::FuncOp::create(builder.getUnknownLoc(), name, funcType);
   mlir::Block *entry = func.addEntryBlock();
 
   // Clear symbol table for new function
@@ -48,7 +49,7 @@ std::any ASTBuilder::visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) {
     // Ensure function has a return
     auto c0 = fnBuilder.create<mlir::arith::ConstantOp>(
         fnBuilder.getUnknownLoc(), fnBuilder.getIntegerAttr(i32Type, 0));
-    fnBuilder.create<mlir::func::ReturnOp>(fnBuilder.getUnknownLoc(), 
+    fnBuilder.create<mlir::func::ReturnOp>(fnBuilder.getUnknownLoc(),
                                            c0.getResult());
   }
 
@@ -57,7 +58,8 @@ std::any ASTBuilder::visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) {
   return nullptr;
 }
 
-std::any ASTBuilder::visitVarDeclaration(ZenithParser::VarDeclarationContext *ctx) {
+std::any
+ASTBuilder::visitVarDeclaration(ZenithParser::VarDeclarationContext *ctx) {
   // Handle simple assignment - not implemented yet
   return nullptr;
 }
@@ -71,20 +73,20 @@ std::any ASTBuilder::visitExpression(ZenithParser::ExpressionContext *ctx) {
 // Non-MLIR stub implementations
 ASTBuilder::ASTBuilder(mlir::MLIRContext *context) {}
 
-std::any ASTBuilder::visitProgram(ZenithParser::ProgramContext *ctx) { 
-  return nullptr; 
+std::any ASTBuilder::visitProgram(ZenithParser::ProgramContext *ctx) {
+  return nullptr;
 }
 
-std::any ASTBuilder::visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) { 
-  return nullptr; 
+std::any ASTBuilder::visitFunctionDecl(ZenithParser::FunctionDeclContext *ctx) {
+  return nullptr;
 }
 
-std::any ASTBuilder::visitVarDeclaration(
-    ZenithParser::VarDeclarationContext *ctx) { 
-  return nullptr; 
+std::any
+ASTBuilder::visitVarDeclaration(ZenithParser::VarDeclarationContext *ctx) {
+  return nullptr;
 }
 
-std::any ASTBuilder::visitExpression(ZenithParser::ExpressionContext *ctx) { 
-  return nullptr; 
+std::any ASTBuilder::visitExpression(ZenithParser::ExpressionContext *ctx) {
+  return nullptr;
 }
 #endif
