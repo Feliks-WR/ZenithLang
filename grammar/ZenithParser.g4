@@ -4,7 +4,7 @@ parser grammar ZenithParser;
 options { tokenVocab=ZenithLexer; }
 
 program: NEWLINE* (statement (semi statement)* semi?)? NEWLINE* EOF;
-statement: varDeclaration | functionDecl | equation | ifStatement | whileStatement | forStatement 
+statement: varDeclaration | functionDecl | assignment | equation | ifStatement | whileStatement | forStatement 
         | returnStatement | printStatement | exprStatement | blockStatement;
 
 semi: (SEMICOLON | NEWLINE)+;
@@ -13,18 +13,21 @@ semi: (SEMICOLON | NEWLINE)+;
 varDeclaration: identifierList (COLON type)?;
 identifierList: IDENTIFIER (COMMA IDENTIFIER)*;
 
+// Assignment: x := [1, 2, 3] (declare and assign, shallow const)
+assignment: expression COLONEQUALS expression;
+
 // Function declarations
 functionDecl:
         IDENTIFIER LPAREN parameterList? RPAREN (ARROW type)?
         (
                 EQUALS expression
-            | EQUALS? NEWLINE* blockStatement
+            | EQUALS NEWLINE* blockStatement
         );
 
 parameterList: parameter (COMMA parameter)*;
 parameter: IDENTIFIER (COLON type)?;
 
-// Equations: x + y = 3; or x = 5;
+// Equations: x + y = 3; or x = 5 (immutable)
 equation: expression EQUALS expression;
 
 // Expression statement (for function calls like: println x, y)
@@ -93,9 +96,24 @@ unaryExpr: (NOT | MINUS | TILDE | AMPERSAND) unaryExpr | callExpr;
 // Function application: f x y or f(x, y) or arr[i] or obj.field
 callExpr: primaryExpr (callSuffix)*;
 callSuffix: 
-    LBRACKET expression RBRACKET                    // array indexing: arr[0]
-    | DOT IDENTIFIER                                // member access: obj.field
+    LBRACKET sliceOrIndex RBRACKET                  // array indexing: arr[0] or slicing: arr[1..3]
+    | DOT IDENTIFIER                                // member access: obj.field or obj.length
     | LPAREN (expression (COMMA expression)*)? RPAREN // function call: f(x, y)
     ;
 
-primaryExpr: INTEGER | FLOAT | STRING | TRUE | FALSE | IDENTIFIER | LPAREN expression RPAREN;
+sliceOrIndex:
+    expression (DOTDOT expression?)?;                // index: expr or slice: expr..expr or expr..
+
+primaryExpr: 
+    INTEGER 
+    | FLOAT 
+    | STRING 
+    | TRUE 
+    | FALSE 
+    | IDENTIFIER 
+    | arrayLiteral
+    | LPAREN expression RPAREN
+    ;
+
+// Array literals: [1, 2, 3] or []
+arrayLiteral: LBRACKET (expression (COMMA expression)*)? RBRACKET;

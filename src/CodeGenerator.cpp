@@ -142,16 +142,56 @@ std::any CodeGenerator::visitCallExpr(ZenithParser::CallExprContext *ctx) {
   if (!ctx)
     return nullptr;
 
-  std::string primary = ctx->primaryExpr()->getText();
+  std::string primary = std::any_cast<std::string>(visit(ctx->primaryExpr()));
   auto suffixes = ctx->callSuffix();
 
   if (!suffixes.empty()) {
-    // Function call
-    std::string callStr = primary + "(";
-    // TODO: Parse arguments from suffixes
-    callStr += ")";
-    functions << "  " << callStr << ";\n";
-    return callStr;
+    for (auto suffix : suffixes) {
+      if (suffix->LBRACKET()) {
+        // Array indexing: arr[i] or slicing: arr[i..j]
+        auto sliceOrIdx = suffix->sliceOrIndex();
+        if (sliceOrIdx) {
+          auto exprs = sliceOrIdx->expression();
+          if (exprs.size() == 1 && !sliceOrIdx->DOTDOT()) {
+            // Simple indexing
+            std::string index = std::any_cast<std::string>(visit(exprs[0]));
+            primary = primary + "[" + index + "]";
+          } else {
+            // Slicing - complex, not fully implemented yet
+            std::string sliceSpec =
+                std::any_cast<std::string>(visit(sliceOrIdx));
+            primary = "/* slice: " + primary + "[" + sliceSpec + "] */";
+          }
+        }
+      } else if (suffix->DOT()) {
+        // Member access: obj.field or arr.length
+        std::string member = suffix->IDENTIFIER()->getText();
+        if (member == "length") {
+          // Array length access
+          if (arrayLengths.find(primary) != arrayLengths.end()) {
+            primary = std::to_string(arrayLengths[primary]);
+          } else {
+            primary = "sizeof(" + primary + ")/sizeof(" + primary + "[0])";
+          }
+        } else {
+          primary = primary + "." + member;
+        }
+      } else if (suffix->LPAREN()) {
+        // Function call: f(args)
+        std::string callStr = primary + "(";
+        auto args = suffix->expression();
+        for (size_t i = 0; i < args.size(); i++) {
+          auto argResult = visit(args[i]);
+          if (argResult.has_value()) {
+            callStr += std::any_cast<std::string>(argResult);
+            if (i < args.size() - 1)
+              callStr += ", ";
+          }
+        }
+        callStr += ")";
+        primary = callStr;
+      }
+    }
   }
 
   return primary;
@@ -161,6 +201,12 @@ std::any
 CodeGenerator::visitPrimaryExpr(ZenithParser::PrimaryExprContext *ctx) {
   if (!ctx)
     return nullptr;
+
+  // Check for array literal first
+  if (ctx->arrayLiteral()) {
+    return visit(ctx->arrayLiteral());
+  }
+
   return ctx->getText();
 }
 
@@ -259,7 +305,7 @@ std::any CodeGenerator::visitEquation(ZenithParser::EquationContext *ctx) {
   if (!ctx)
     return nullptr;
 
-  // Handle variable assignment: x = expr
+  // Handle variable assignment with =: x = expr
   auto exprs = ctx->expression();
   if (exprs.size() == 2) {
     std::string lhs = std::any_cast<std::string>(visit(exprs[0]));
@@ -272,12 +318,106 @@ std::any CodeGenerator::visitEquation(ZenithParser::EquationContext *ctx) {
                                "VWXYZ0123456789_") == std::string::npos);
 
     if (isSimpleIdentifier && symbolTable.find(lhs) == symbolTable.end()) {
-      // Declare it as int by default
+      // Declare it as int by default (deeply immutable with =)
       symbolTable[lhs] = "int";
-      functions << "  int " << lhs << " = " << rhs << ";\n";
+      functions << "  const int " << lhs << " = " << rhs << ";\n";
     } else {
       functions << "  " << lhs << " = " << rhs << ";\n";
     }
+  }
+
+  return nullptr;
+}
+
+std::any CodeGenerator::visitAssignment(ZenithParser::AssignmentContext *ctx) {
+  if (!ctx)
+    return nullptr;
+
+  // Handle variable assignment with :=: x := expr
+  // := means shallow const - can't reassign variable, but elements are mutable
+  auto exprs = ctx->expression();
+  if (exprs.size() == 2) {
+    std::string lhs = std::any_cast<std::string>(visit(exprs[0]));
+    std::string rhs = std::any_cast<std::string>(visit(exprs[1]));
+
+    bool isSimpleIdentifier =
+        (lhs.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTU"
+                               "VWXYZ0123456789_") == std::string::npos);
+
+    if (isSimpleIdentifier && symbolTable.find(lhs) == symbolTable.end()) {
+      symbolTable[lhs] = "int"; // Will be updated based on RHS
+      isShallowConst[lhs] = true;
+
+      // Check if RHS is an array literal
+      if (rhs.find("__arr_") != std::string::npos) {
+        // Array assignment - extract array info
+        functions << "  int * const " << lhs << " = " << rhs << ";\n";
+      } else {
+        functions << "  int const " << lhs << " = " << rhs << ";\n";
+      }
+    } else {
+      functions << "  " << lhs << " = " << rhs << ";\n";
+    }
+  }
+
+  return nullptr;
+}
+
+std::any
+CodeGenerator::visitArrayLiteral(ZenithParser::ArrayLiteralContext *ctx) {
+  if (!ctx)
+    return nullptr;
+
+  // Generate: { expr1, expr2, ... }
+  std::ostringstream arrCode;
+  std::vector<std::string> elements;
+
+  for (auto expr : ctx->expression()) {
+    auto result = visit(expr);
+    if (result.has_value()) {
+      elements.push_back(std::any_cast<std::string>(result));
+    }
+  }
+
+  // Generate a static array in C
+  std::string tempName = "__arr_" + std::to_string(tempVarCounter++);
+  int length = elements.size();
+
+  functions << "  static int " << tempName << "[" << length << "] = {";
+  for (size_t i = 0; i < elements.size(); i++) {
+    functions << elements[i];
+    if (i < elements.size() - 1)
+      functions << ", ";
+  }
+  functions << "};\n";
+
+  // Store length for bounds checking
+  arrayLengths[tempName] = length;
+
+  return tempName;
+}
+
+std::any
+CodeGenerator::visitSliceOrIndex(ZenithParser::SliceOrIndexContext *ctx) {
+  if (!ctx)
+    return nullptr;
+
+  auto exprs = ctx->expression();
+  if (exprs.size() == 1) {
+    // Simple indexing: arr[i]
+    return std::any_cast<std::string>(visit(exprs[0]));
+  } else if (exprs.size() == 2) {
+    // Slicing: arr[start..end]
+    std::string start = std::any_cast<std::string>(visit(exprs[0]));
+    std::string end = std::any_cast<std::string>(visit(exprs[1]));
+
+    // For slicing, we'll need to generate a new array
+    // This is complex - for now, just mark it
+    return start + ".." + end; // Placeholder
+  } else if (ctx->DOTDOT()) {
+    // Open-ended slice: arr[start..]
+    std::string start = std::any_cast<std::string>(visit(exprs[0]));
+    return start + ".."; // Placeholder
   }
 
   return nullptr;

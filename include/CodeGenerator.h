@@ -25,10 +25,13 @@ public:
   std::any
   visitWhileStatement(ZenithParser::WhileStatementContext *ctx) override;
   std::any visitEquation(ZenithParser::EquationContext *ctx) override;
+  std::any visitAssignment(ZenithParser::AssignmentContext *ctx) override;
   std::any
   visitBlockStatement(ZenithParser::BlockStatementContext *ctx) override;
   std::any visitCallExpr(ZenithParser::CallExprContext *ctx) override;
   std::any visitPrimaryExpr(ZenithParser::PrimaryExprContext *ctx) override;
+  std::any visitArrayLiteral(ZenithParser::ArrayLiteralContext *ctx) override;
+  std::any visitSliceOrIndex(ZenithParser::SliceOrIndexContext *ctx) override;
 
   // Get generated C code
   std::string getGeneratedCode() const;
@@ -41,7 +44,10 @@ private:
   std::ostringstream headers;
   std::ostringstream functions;
   std::unordered_map<std::string, std::string> symbolTable; // var_name -> type
+  std::unordered_map<std::string, int> arrayLengths;    // var_name -> length
+  std::unordered_map<std::string, bool> isShallowConst; // var_name -> is :=
   std::vector<std::string> functionNames;
+  int tempVarCounter = 0;
 
   void emitHeaders();
   void emitMain();

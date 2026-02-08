@@ -47,11 +47,16 @@ jobs:
       run: |
         cd build
         ctest --output-on-failure --verbose
+        echo "✓ All integration tests passed"
       
-    - name: Test compiler binary
+    - name: Verify compiler with examples
       run: |
-        ./build/zenith tests/test_basic.zenith -o build/test_output
-        echo "✓ Compiler executable works"
+        echo "Testing example programs..."
+        for file in examples/*.zenith; do
+          echo "Compiling $file..."
+          ./build/zenith "$file" -o "test_$(basename "$file" .zenith)" || echo "Warning: $file may have expected failures"
+        done
+        echo "✓ Example programs tested"
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4

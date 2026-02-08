@@ -28,14 +28,14 @@ public:
   long minValue;
   long maxValue;
 
-  Constraint(ConstraintKind k, std::string expr);
-  static std::shared_ptr<Constraint> make_range(long min, long max);
-  static std::shared_ptr<Constraint> make_single_value(long value);
-  static std::shared_ptr<Constraint> makePredicate(const std::string &expr);
-  static std::shared_ptr<Constraint> make_non_null();
+  Constraint(ConstraintKind Kind, std::string Expr);
+  static std::shared_ptr<Constraint> makeRange(long Min, long Max);
+  static std::shared_ptr<Constraint> makeSingleValue(long Value);
+  static std::shared_ptr<Constraint> makePredicate(const std::string &Expr);
+  static std::shared_ptr<Constraint> makeNonNull();
 
   std::string toString() const;
-  bool is_valid() const;
+  bool isValid() const;
 };
 
 // DependentType represents types that depend on values
@@ -65,22 +65,22 @@ public:
   std::shared_ptr<DependentType> returnType;
 
   DependentType();
-  DependentType(TypeKind k, std::string name);
+  DependentType(TypeKind Kind, std::string Name);
 
   // Factory methods
   static std::shared_ptr<DependentType> makeInt();
   static std::shared_ptr<DependentType>
-  makeIntWithConstraint(const std::shared_ptr<Constraint> &constraint);
+  makeIntWithConstraint(const std::shared_ptr<Constraint> &Constraint);
   static std::shared_ptr<DependentType>
-  makePointer(const std::shared_ptr<DependentType> &elemType);
+  makePointer(const std::shared_ptr<DependentType> &ElemType);
   static std::shared_ptr<DependentType>
-  makeArray(const std::shared_ptr<DependentType> &elem_type,
-            const std::string &length_param);
+  makeArray(const std::shared_ptr<DependentType> &ElemType,
+            const std::string &LengthParam);
   static std::shared_ptr<DependentType>
-  make_set(const std::shared_ptr<DependentType> &elem_type);
+  makeSet(const std::shared_ptr<DependentType> &ElemType);
   static std::shared_ptr<DependentType> makeFloat();
   static std::shared_ptr<DependentType> makeBool();
-  static std::shared_ptr<DependentType> makeNamed(const std::string &name);
+  static std::shared_ptr<DependentType> makeNamed(const std::string &Name);
 
   // Proof checking
   bool requiresProof() const;
@@ -90,10 +90,10 @@ public:
   std::string toString() const;
 
   // Type compatibility
-  bool isCompatibleWith(const std::shared_ptr<DependentType> &other) const;
+  bool isCompatibleWith(const std::shared_ptr<DependentType> &Other) const;
 
   // Constraint satisfaction
-  bool satisfiesConstraints(const std::string &value) const;
+  bool satisfiesConstraints(const std::string &Value) const;
 };
 
 // Type environment for type checking
@@ -104,16 +104,16 @@ private:
       proofObligations;
 
 public:
-  void addType(const std::string &name,
-               const std::shared_ptr<DependentType> &type);
-  std::shared_ptr<DependentType> getType(const std::string &name) const;
+  void addType(const std::string &Name,
+               const std::shared_ptr<DependentType> &Type);
+  std::shared_ptr<DependentType> getType(const std::string &Name) const;
 
-  void addProofObligation(const std::string &location,
-                          const std::shared_ptr<Constraint> &proof);
+  void addProofObligation(const std::string &Location,
+                          const std::shared_ptr<Constraint> &Proof);
   std::vector<std::shared_ptr<Constraint>>
-  getProofs(const std::string &location) const;
+  getProofs(const std::string &Location) const;
 
-  bool hasType(const std::string &name) const;
+  bool hasType(const std::string &Name) const;
   void clear();
 };
 

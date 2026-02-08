@@ -44,13 +44,17 @@ jobs:
       run: |
         cd build
         ctest --output-on-failure
+        echo "✓ All integration tests passed for coverage analysis"
     
     - name: Generate coverage report
       run: |
         cd build
         lcov --capture --directory . --output-file coverage.info
         lcov --remove coverage.info '/usr/*' --output-file coverage.info
+        # Remove ANTLR-generated code from coverage (not our code)
+        lcov --remove coverage.info '*antlr*' --output-file coverage.info
         lcov --list coverage.info
+        echo "Note: Coverage is based on integration tests; full coverage requires unit tests"
     
     - name: Upload coverage
       uses: codecov/codecov-action@v4

@@ -11,7 +11,7 @@ Zenith is a modern, compiled programming language that transpiles to C for maxim
 #### Basic Functions
 
 ```zenith
-main() {
+main() = {
     return 0
 }
 ```
@@ -19,11 +19,11 @@ main() {
 #### Functions with Parameters
 
 ```zenith
-add(a, b) {
+add(a, b) = {
     return a + b
 }
 
-multiply(x, y) {
+multiply(x, y) = {
     result = x * y
     return result
 }
@@ -32,7 +32,7 @@ multiply(x, y) {
 #### Function Calls
 
 ```zenith
-main() {
+main() = {
     sum = add(5, 3)
     product = multiply(4, 7)
     return sum
@@ -44,7 +44,7 @@ main() {
 Variables are automatically declared on first assignment with type inference:
 
 ```zenith
-main() {
+main() = {
     x = 42          // int
     y = 3.14        // float
     name = "Alice"  // string
@@ -57,7 +57,7 @@ main() {
 #### If Statements
 
 ```zenith
-main() {
+main() = {
     x = 10
     
     if x > 5 {
@@ -71,7 +71,7 @@ main() {
 #### If-Else
 
 ```zenith
-check(n) {
+check(n) = {
     if n < 0 {
         return -1
     } else {
@@ -83,7 +83,7 @@ check(n) {
 #### Nested Conditions
 
 ```zenith
-classify(x) {
+classify(x) = {
     if x < 0 {
         return -1
     } else {
@@ -99,7 +99,7 @@ classify(x) {
 #### While Loops
 
 ```zenith
-countdown(n) {
+countdown(n) = {
     i = n
     while i > 0 {
         i = i - 1
@@ -113,7 +113,7 @@ countdown(n) {
 The `print` statement outputs values to stdout:
 
 ```zenith
-main() {
+main() = {
     x = 42
     print x           // Prints: 42
     
@@ -189,7 +189,7 @@ s = "text"    // string
    comment
 */
 
-main() {
+main() = {
     // This is a comment
     return 0  // End-of-line comment
 }
@@ -200,7 +200,7 @@ main() {
 ### Fibonacci Sequence
 
 ```zenith
-fibonacci(n) {
+fibonacci(n) = {
     a = 0
     b = 1
     i = 0
@@ -216,7 +216,7 @@ fibonacci(n) {
     return a
 }
 
-main() {
+main() = {
     print "Fibonacci sequence (first 10):"
     result = fibonacci(10)
     return 0
@@ -226,7 +226,7 @@ main() {
 ### Prime Number Checker
 
 ```zenith
-is_prime(n) {
+is_prime(n) = {
     if n < 2 {
         return 0
     }
@@ -242,7 +242,7 @@ is_prime(n) {
     return 1
 }
 
-main() {
+main() = {
     num = 17
     if is_prime(num) {
         print "Prime!"
@@ -256,7 +256,7 @@ main() {
 ### Factorial Calculator
 
 ```zenith
-factorial(n) {
+factorial(n) = {
     if n <= 1 {
         return 1
     }
@@ -272,7 +272,7 @@ factorial(n) {
     return result
 }
 
-main() {
+main() = {
     n = 5
     result = factorial(n)
     print result  // Prints: 120

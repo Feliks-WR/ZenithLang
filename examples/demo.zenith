@@ -2,13 +2,13 @@
 // Demonstrates: print statements, functions with parameters, improved control flow
 
 // Function with parameters
-greet(name) {
+greet(name) = {
     print "Hello, World!"
     return 0
 }
 
 // Arithmetic and variables
-calculate(a, b) {
+calculate(a, b) = {
     sum = a + b
     product = a * b
     print sum
@@ -17,7 +17,7 @@ calculate(a, b) {
 }
 
 // Control flow with print
-fizzbuzz(n) {
+fizzbuzz(n) = {
     i = 1
     while i <= n {
         if i % 15 == 0 {
@@ -38,7 +38,7 @@ fizzbuzz(n) {
     return 0
 }
 
-main() {
+main() = {
     print "=== Zenith Language Demo ==="
     
     result = greet("User")

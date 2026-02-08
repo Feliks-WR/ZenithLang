@@ -1,5 +1,5 @@
 // Prime number checker
-is_prime(n) {
+is_prime(n) = {
     if n < 2 {
         return 0
     }
@@ -16,7 +16,7 @@ is_prime(n) {
 }
 
 // Print primes up to n
-print_primes(limit) {
+print_primes(limit) = {
     print "Prime numbers:"
     num = 2
     
@@ -30,7 +30,7 @@ print_primes(limit) {
     return 0
 }
 
-main() {
+main() = {
     print_primes(30)
     return 0
 }

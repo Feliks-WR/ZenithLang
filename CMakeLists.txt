@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 4.0)
 project(ZenithLanguage)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -135,12 +135,33 @@ endif ()
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "✓ LLVM ${LLVM_PACKAGE_VERSION} found at ${LLVM_DIR}")
 
-# MLIR is part of LLVM, set path explicitly
-set(MLIR_DIR "${LLVM_DIR}/../mlir")
-find_package(MLIR REQUIRED CONFIG)
+# MLIR is part of LLVM, derive its location from LLVM installation
+# LLVM_DIR is typically /usr/lib/llvm-XX/cmake (symlink) or /usr/lib/llvm-XX/lib/cmake/llvm
+# We need to find /usr/lib/llvm-XX/lib/cmake/mlir
+get_filename_component(LLVM_CMAKE_DIR "${LLVM_DIR}" REALPATH)
+get_filename_component(LLVM_LIB_DIR "${LLVM_CMAKE_DIR}" DIRECTORY)
+
+# If we're in lib/cmake/llvm, go to lib/cmake/mlir
+if ("${LLVM_LIB_DIR}" MATCHES ".*/lib/cmake$")
+    set(MLIR_DIR "${LLVM_LIB_DIR}/mlir")
+else ()
+    # Try to find it relative to LLVM installation
+    get_filename_component(LLVM_INSTALL_PREFIX "${LLVM_DIR}/../../.." ABSOLUTE)
+    set(MLIR_DIR "${LLVM_INSTALL_PREFIX}/lib/cmake/mlir")
+endif ()
+
+# Check if MLIR directory exists
+if (NOT EXISTS "${MLIR_DIR}/MLIRConfig.cmake")
+    message(FATAL_ERROR "MLIR not found at ${MLIR_DIR}. Please install LLVM with MLIR support.")
+endif ()
+
+# Include MLIR CMake modules directly
+list(APPEND CMAKE_MODULE_PATH "${MLIR_DIR}")
+
+# Include MLIR configuration manually
+include("${MLIR_DIR}/MLIRConfig.cmake")
 message(STATUS "✓ MLIR found at ${MLIR_DIR}")
 
-list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 include(AddMLIR)
 
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
@@ -187,20 +208,40 @@ endif ()
 
 # Testing with Google Test
 enable_testing()
-find_package(GTest)
 
-if (GTest_FOUND)
-    message(STATUS "⚠ Google Test found but disabled due to LLVM/GTest header conflicts")
-    message(STATUS "  Run unit tests with: make test")
-    message(WARNING "⚠ Google Test not found - tests disabled")
-    message(STATUS "  Install with: sudo apt-get install libgtest-dev")
-endif ()
+# Note: GTest has namespace conflicts with LLVM headers in this environment.
+# To use GTest for unit testing, you can either:
+# 1. Build a separate test binary without MLIR support
+# 2. Use integration tests via the compiler (recommended for CI/CD)
+# 3. Use local development setup with compatible LLVM/GTest versions
+#
+# For now, we use compiler-based integration tests which are more valuable anyway
+# as they test the entire compiler pipeline end-to-end.
 
-# Add a simple end-to-end test that compiles a sample file
-add_test(NAME compile_basic COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_basic.zenith -o test_output)
-set_tests_properties(compile_basic PROPERTIES
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
+# Integration tests - compile example programs
+# These tests verify the compiler works end-to-end
+
+add_test(NAME integration_basic COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_basic.zenith -o test_output)
+set_tests_properties(integration_basic PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME integration_functions COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_functions.zenith -o test_output)
+set_tests_properties(integration_functions PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME integration_arrays COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_arrays_simple.zenith -o test_output)
+set_tests_properties(integration_arrays PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME integration_arrays_comprehensive COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_arrays_comprehensive.zenith -o test_output)
+set_tests_properties(integration_arrays_comprehensive PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME integration_assignment COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_assignment.zenith -o test_output)
+set_tests_properties(integration_assignment PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME integration_array_length COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_array_length.zenith -o test_output)
+set_tests_properties(integration_array_length PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+# This test is expected to fail (out-of-bounds detection)
+add_test(NAME integration_arrays_oob COMMAND zenith ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_arrays_oob.zenith -o test_output)
+set_tests_properties(integration_arrays_oob PROPERTIES WILL_FAIL TRUE WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 message(STATUS "✓ Zenith compiler built successfully")
 message(STATUS "  Run: ./zenith <file.zenith>")

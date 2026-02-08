@@ -21,7 +21,6 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-#include <utility>
 
 namespace {
 
@@ -154,21 +153,139 @@ public:
 
   antlrcpp::Any visitEquation(ZenithParser::EquationContext *ctx) override {
     std::string left = ctx->expression(0)->getText();
-    std::string right = ctx->expression(1)->getText();
+    std::string right_text = ctx->expression(1)->getText();
 
     if (IsIdentifier(left)) {
-      auto value = ParseIntegerLiteral(right);
+      // Check if right side is an array literal [...]
+      auto right_expr = ctx->expression(1);
+      if (auto *primary = dynamic_cast<ZenithParser::PrimaryExprContext *>(
+              GetPrimaryExpr(right_expr))) {
+        if (primary->arrayLiteral()) {
+          // This is an array assignment: x = [1, 2, 3]
+          int array_size = primary->arrayLiteral()->expression().size();
+          std::string size_str = std::to_string(array_size);
+
+          // Create array type with known size
+          auto elem_type = mlir::customlang::DependentType::makeInt();
+          auto array_type =
+              mlir::customlang::DependentType::makeArray(elem_type, size_str);
+
+          // Add constraint that indices must be < size
+          array_type->constraints.push_back(
+              mlir::customlang::Constraint::makeRange(0, array_size - 1));
+
+          checker_.declareVariable(left, array_type);
+          constant_values_[left + ".length"] = array_size;
+          return visitChildren(ctx);
+        }
+      }
+
+      // Original integer literal handling
+      auto value = ParseIntegerLiteral(right_text);
       if (value.has_value()) {
         constant_values_[left] = value.value();
         checker_.declareVariable(
-            left, mlir::customlang::DependentType::makeIntWithConstraint(
-                      mlir::customlang::Constraint::make_single_value(
-                          value.value())));
-        checker_.assignVariable(left, right);
+            left,
+            mlir::customlang::DependentType::makeIntWithConstraint(
+                mlir::customlang::Constraint::makeSingleValue(value.value())));
+        checker_.assignVariable(left, right_text);
       }
     }
 
     return visitChildren(ctx);
+  }
+
+  antlrcpp::Any visitAssignment(ZenithParser::AssignmentContext *ctx) override {
+    std::string left = ctx->expression(0)->getText();
+    std::string right_text = ctx->expression(1)->getText();
+
+    if (IsIdentifier(left)) {
+      // Check if right side is an array literal [...]
+      auto right_expr = ctx->expression(1);
+      if (auto *primary = dynamic_cast<ZenithParser::PrimaryExprContext *>(
+              GetPrimaryExpr(right_expr))) {
+        if (primary->arrayLiteral()) {
+          // This is an array assignment: x := [1, 2, 3]
+          int array_size = primary->arrayLiteral()->expression().size();
+          std::string size_str = std::to_string(array_size);
+
+          // Create array type with known size
+          auto elem_type = mlir::customlang::DependentType::makeInt();
+          auto array_type =
+              mlir::customlang::DependentType::makeArray(elem_type, size_str);
+
+          // Add constraint that indices must be < size
+          array_type->constraints.push_back(
+              mlir::customlang::Constraint::makeRange(0, array_size - 1));
+
+          checker_.declareVariable(left, array_type);
+          constant_values_[left + ".length"] = array_size;
+          return visitChildren(ctx);
+        }
+      }
+
+      // Original integer literal handling
+      auto value = ParseIntegerLiteral(right_text);
+      if (value.has_value()) {
+        constant_values_[left] = value.value();
+        checker_.declareVariable(
+            left,
+            mlir::customlang::DependentType::makeIntWithConstraint(
+                mlir::customlang::Constraint::makeSingleValue(value.value())));
+        checker_.assignVariable(left, right_text);
+      }
+    }
+
+    return visitChildren(ctx);
+  }
+
+  // Helper to get primary expression from nested expression contexts
+  ZenithParser::PrimaryExprContext *
+  GetPrimaryExpr(ZenithParser::ExpressionContext *ctx) {
+    // Navigate through expression hierarchy
+    if (auto *logicalOr = dynamic_cast<ZenithParser::LogicalOrExprContext *>(
+            ctx->logicalOrExpr())) {
+      if (logicalOr->logicalAndExpr().size() == 1) {
+        auto *logicalAnd = logicalOr->logicalAndExpr(0);
+        if (logicalAnd->bitwiseOrExpr().size() == 1) {
+          auto *bitwiseOr = logicalAnd->bitwiseOrExpr(0);
+          if (bitwiseOr->bitwiseXorExpr().size() == 1) {
+            auto *bitwiseXor = bitwiseOr->bitwiseXorExpr(0);
+            if (bitwiseXor->bitwiseAndExpr().size() == 1) {
+              auto *bitwiseAnd = bitwiseXor->bitwiseAndExpr(0);
+              if (bitwiseAnd->equalityExpr().size() == 1) {
+                auto *equality = bitwiseAnd->equalityExpr(0);
+                if (equality->relationalExpr().size() == 1) {
+                  auto *relational = equality->relationalExpr(0);
+                  if (relational->shiftExpr().size() == 1) {
+                    auto *shift = relational->shiftExpr(0);
+                    if (shift->additiveExpr().size() == 1) {
+                      auto *additive = shift->additiveExpr(0);
+                      if (additive->multiplicativeExpr().size() == 1) {
+                        auto *multiplicative = additive->multiplicativeExpr(0);
+                        if (multiplicative->powerExpr().size() == 1) {
+                          auto *power = multiplicative->powerExpr(0);
+                          if (power->unaryExpr()) {
+                            auto *unary = power->unaryExpr();
+                            if (unary->callExpr()) {
+                              auto *call = unary->callExpr();
+                              if (call->callSuffix().empty()) {
+                                return call->primaryExpr();
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return nullptr;
   }
 
   antlrcpp::Any visitMultiplicativeExpr(
@@ -197,7 +314,7 @@ public:
         auto literal = ParseIntegerLiteral(divisor);
         if (literal.has_value()) {
           dtype = mlir::customlang::DependentType::makeIntWithConstraint(
-              mlir::customlang::Constraint::make_single_value(literal.value()));
+              mlir::customlang::Constraint::makeSingleValue(literal.value()));
         } else {
           checker_.declareVariable(divisor,
                                    mlir::customlang::DependentType::makeInt());

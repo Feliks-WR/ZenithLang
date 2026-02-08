@@ -61,7 +61,7 @@ buildVector(x: int {>= 0}, y: int {>= 0}, z: int {>= 0}) -> int {
 }
 
 // Main demonstration
-main() {
+main() = {
     divisor: int {!= 0}
     percentage: int {0..100}
     positive: int {> 0}

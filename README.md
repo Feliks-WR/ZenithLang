@@ -6,9 +6,11 @@ An immutable-first programming language compiler built with MLIR (Multi-Level In
 
 ## Key Features
 
-- **Immutable by Default**: All variables are immutable - no reassignment allowed
+- **Immutable by Default**: All variables are immutable with `=` - no reassignment allowed
+- **Shallow Const with `:=`**: Optional shallow const assignment for mutable element containers
 - **Flexible Type System**: Users define custom types; no hardcoded types
 - **Dependent Types**: Types can depend on values for compile-time safety verification
+- **First-Class Arrays**: Array literals with compile-time bounds checking
 - **Pure Expressions**: No side effects in expression evaluation
 - **Separate Lexer/Parser**: Clean ANTLR grammar separation for maintainability
 - **Compile-time Proof Obligations**: Verify safety properties like array bounds and division by zero at compile-time
@@ -87,15 +89,21 @@ make
 ### Example Input File
 
 ```customlang
-fn add(a: i32, b: i32) -> i32 {
-    return a + b;
-}
-
+// Array example with compile-time bounds checking
 fn main() {
-    let x: i32 = 10;
-    let y: i32 = 20;
-    let result: i32 = add(x, y);
-    return result;
+    nums = [1, 2, 3, 4, 5];
+    first = nums[0];       // ✓ Proven safe at compile-time
+    last = nums[4];        // ✓ Proven safe at compile-time
+    // invalid = nums[10]; // ✗ Compile error: Index 10 must be < 5
+    
+    len = nums.length;
+    print len;  // Outputs: 5
+    
+    data := [10, 20, 30];  // Shallow const (elements mutable)
+    x = data[1];
+    print x;    // Outputs: 20
+    
+    return 0;
 }
 ```
 

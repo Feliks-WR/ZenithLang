@@ -195,7 +195,7 @@ bool TypeChecker::checkConstraint(const std::shared_ptr<Constraint> &constraint,
                                   const std::string &value) const {
   if (!constraint)
     return false;
-  return constraint->is_valid(); // Can be extended with actual checking
+  return constraint->isValid(); // Can be extended with actual checking
 }
 
 void TypeChecker::addError(const std::string &message) {

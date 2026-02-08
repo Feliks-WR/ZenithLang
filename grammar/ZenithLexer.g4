@@ -132,6 +132,7 @@ DOT: '.';
 COLON: ':';
 ARROW: '->';
 EQUALS: '=';
+COLONEQUALS: ':=';
 
 INTEGER: [0-9]+;
 FLOAT: [0-9]+ '.' [0-9]+;
